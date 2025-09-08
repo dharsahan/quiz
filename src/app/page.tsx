@@ -18,6 +18,7 @@ export type Difficulty = 'Easy' | 'Medium' | 'Hard';
 export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [quiz, setQuiz] = useState<QuizQuestion[] | null>(null);
+  const [difficulty, setDifficulty] = useState<Difficulty>('Medium');
   const { toast } = useToast();
 
   const handleGenerationError = (error: any) => {
@@ -33,6 +34,7 @@ export default function Home() {
   const handleGenerateFromTopic = async (topic: string, numQuestions: number, difficulty: Difficulty) => {
     setIsLoading(true);
     setQuiz(null);
+    setDifficulty(difficulty);
     try {
       const result = await generateQuiz({ topic, numQuestions, difficulty });
       if (!result.questions || result.questions.length === 0) {
@@ -49,6 +51,7 @@ export default function Home() {
   const handleGenerateFromFile = async (fileDataUri: string, numQuestions: number, difficulty: Difficulty) => {
     setIsLoading(true);
     setQuiz(null);
+    setDifficulty(difficulty);
     try {
       const result = await generateQuizFromFile({ fileDataUri, numQuestions, difficulty });
       const parsedQuiz = JSON.parse(result.quiz).questions;
@@ -78,7 +81,7 @@ export default function Home() {
       );
     }
     if (quiz) {
-      return <QuizDisplay quiz={quiz} onRestart={restartQuiz} />;
+      return <QuizDisplay quiz={quiz} onRestart={restartQuiz} difficulty={difficulty} />;
     }
 
     return (
