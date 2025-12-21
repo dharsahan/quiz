@@ -1,0 +1,52 @@
+[
+  {
+    "question": "What is the correct syntax to declare a variable in Java?",
+    "options": {
+      "A": "int x;",
+      "B": "declare int x;",
+      "C": "var x int;",
+      "D": "x int;"
+    },
+    "answer": "A"
+  },
+  {
+    "question": "Which of the following is a valid constructor in Java?",
+    "options": {
+      "A": "public MyClass() {}",
+      "B": "MyClass() {}",
+      "C": "void MyClass() {}",
+      "D": "MyClass() : {}"
+    },
+    "answer": "A"
+  },
+  {
+    "question": "What is the output of the following code: System.out.println(3 + 2 + '5');?",
+    "options": {
+      "A": "55",
+      "B": "25",
+      "C": "35",
+      "D": "Error"
+    },
+    "answer": "A"
+  },
+  {
+    "question": "Which keyword is used to inherit a class in Java?",
+    "options": {
+      "A": "extends",
+      "B": "inherits",
+      "C": "implements",
+      "D": "extendss"
+    },
+    "answer": "A"
+  },
+  {
+    "question": "What is the time complexity of a binary search algorithm in a sorted array?",
+    "options": {
+      "A": "O(n)",
+      "B": "O(log n)",
+      "C": "O(n log n)",
+      "D": "O(1)"
+    },
+    "answer": "B"
+  }
+]

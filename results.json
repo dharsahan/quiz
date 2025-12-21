@@ -1,0 +1,100 @@
+{
+  "quizInfo": {
+    "title": "Java MCQ Quiz",
+    "totalQuestions": 5,
+    "createdDate": "2025-12-21"
+  },
+  "statistics": {
+    "totalAttempts": 2,
+    "averageScore": 1.5,
+    "highestScore": 2,
+    "lowestScore": 1
+  },
+  "lastUpdated": "2025-12-21T16:45:00.632Z",
+  "results": [
+    {
+      "id": 1766334519583,
+      "name": "kalai",
+      "score": 2,
+      "total": 5,
+      "percentage": 40,
+      "date": "21/12/2025",
+      "time": "9:58:39 PM",
+      "timestamp": "2025-12-21T16:28:39.583Z",
+      "responses": [
+        {
+          "question": "What is the correct syntax to declare a variable in Java?",
+          "yourAnswer": "B",
+          "correctAnswer": "A",
+          "result": "Wrong"
+        },
+        {
+          "question": "Which of the following is a valid constructor in Java?",
+          "yourAnswer": "A",
+          "correctAnswer": "A",
+          "result": "Correct"
+        },
+        {
+          "question": "Which keyword is used to inherit a class in Java?",
+          "yourAnswer": "D",
+          "correctAnswer": "A",
+          "result": "Wrong"
+        },
+        {
+          "question": "What is the time complexity of a binary search algorithm in a sorted array?",
+          "yourAnswer": "B",
+          "correctAnswer": "B",
+          "result": "Correct"
+        },
+        {
+          "question": "What is the output of the following code: System.out.println(3 + 2 + '5');?",
+          "yourAnswer": "C",
+          "correctAnswer": "A",
+          "result": "Wrong"
+        }
+      ]
+    },
+    {
+      "id": 1766335500623,
+      "name": "kalaiya",
+      "score": 1,
+      "total": 5,
+      "percentage": 20,
+      "date": "21/12/2025",
+      "time": "10:15:00 PM",
+      "timestamp": "2025-12-21T16:45:00.623Z",
+      "responses": [
+        {
+          "question": "What is the output of the following code: System.out.println(3 + 2 + '5');?",
+          "yourAnswer": "D",
+          "correctAnswer": "A",
+          "result": "Wrong"
+        },
+        {
+          "question": "What is the correct syntax to declare a variable in Java?",
+          "yourAnswer": "B",
+          "correctAnswer": "A",
+          "result": "Wrong"
+        },
+        {
+          "question": "What is the time complexity of a binary search algorithm in a sorted array?",
+          "yourAnswer": "B",
+          "correctAnswer": "B",
+          "result": "Correct"
+        },
+        {
+          "question": "Which of the following is a valid constructor in Java?",
+          "yourAnswer": "C",
+          "correctAnswer": "A",
+          "result": "Wrong"
+        },
+        {
+          "question": "Which keyword is used to inherit a class in Java?",
+          "yourAnswer": "C",
+          "correctAnswer": "A",
+          "result": "Wrong"
+        }
+      ]
+    }
+  ]
+}

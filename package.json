@@ -1,0 +1,21 @@
+{
+    "name": "java-mcq-quiz",
+    "version": "1.0.0",
+    "description": "A modern Java MCQ Quiz application with admin panel",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js",
+        "dev": "node server.js"
+    },
+    "keywords": [
+        "quiz",
+        "java",
+        "mcq",
+        "education"
+    ],
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "dotenv": "^16.3.1"
+    }
+}

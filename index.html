@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Java MCQ Quiz</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="color.css">
+</head>
+
+<body>
+    <div class="background-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+    </div>
+
+    <div class="app-container">
+        <!-- Start Screen -->
+        <div id="startScreen" class="screen active">
+            <div class="card start-card">
+                <div class="logo">☕</div>
+                <h1>Java MCQ Quiz</h1>
+                <p class="subtitle">Test your Java programming knowledge</p>
+
+                <div class="stats-preview" id="statsPreview">
+                    <div class="stat">
+                        <span class="stat-value" id="totalQuestions">5</span>
+                        <span class="stat-label">Questions</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value" id="totalAttempts">0</span>
+                        <span class="stat-label">Attempts</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value" id="highScore">0</span>
+                        <span class="stat-label">Best Score</span>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">
+                </div>
+
+                <button id="startBtn" class="btn btn-primary btn-large">
+                    Start Quiz
+                    <span class="btn-icon">→</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div id="quizScreen" class="screen">
+            <div class="card quiz-card">
+                <!-- Progress Bar -->
+                <div class="progress-container">
+                    <div class="progress-bar" id="progressBar"></div>
+                    <span class="progress-text" id="progressText">1/5</span>
+                </div>
+
+                <!-- Question -->
+                <div class="question-container">
+                    <h2 id="questionText" class="question-text">Loading question...</h2>
+                </div>
+
+                <!-- Options -->
+                <div class="options-container" id="optionsContainer">
+                    <button class="option-btn" data-option="A">
+                        <span class="option-letter">A</span>
+                        <span class="option-text" id="optionA">Option A</span>
+                    </button>
+                    <button class="option-btn" data-option="B">
+                        <span class="option-letter">B</span>
+                        <span class="option-text" id="optionB">Option B</span>
+                    </button>
+                    <button class="option-btn" data-option="C">
+                        <span class="option-letter">C</span>
+                        <span class="option-text" id="optionC">Option C</span>
+                    </button>
+                    <button class="option-btn" data-option="D">
+                        <span class="option-letter">D</span>
+                        <span class="option-text" id="optionD">Option D</span>
+                    </button>
+                </div>
+
+                <!-- Next Button -->
+                <button id="nextBtn" class="btn btn-secondary">
+                    Next Question
+                    <span class="btn-icon">→</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="resultScreen" class="screen">
+            <div class="card result-card">
+                <div class="result-icon" id="resultIcon">🎉</div>
+                <h1 id="resultTitle">Quiz Complete!</h1>
+
+                <div class="result-score">
+                    <div class="score-circle" id="scoreCircle">
+                        <span class="final-score" id="finalScore">0</span>
+                        <span class="score-total" id="scoreTotal">/5</span>
+                    </div>
+                    <p class="score-percent" id="scorePercent">0%</p>
+                </div>
+
+                <div class="result-message" id="resultMessage">
+                    Great effort! Keep practicing to improve.
+                </div>
+
+                <div class="result-buttons">
+                    <button id="reviewBtn" class="btn btn-outline">
+                        📝 Review Answers
+                    </button>
+                    <button id="retryBtn" class="btn btn-primary">
+                        🔄 Try Again
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Review Screen -->
+        <div id="reviewScreen" class="screen">
+            <div class="card review-card">
+                <h1>📝 Answer Review</h1>
+                <div id="reviewList" class="review-list"></div>
+                <button id="backToResultBtn" class="btn btn-primary">
+                    ← Back to Results
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
