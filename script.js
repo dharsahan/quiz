@@ -9,9 +9,9 @@ let score = 0;
 let responses = [];
 let playerName = '';
 
-// API URLs
-const API_URL = '/api/results';
-const QUESTIONS_URL = '/api/questions';
+// API URLs - uses config.js for base URL
+const API_URL = getApiUrl('/api/results');
+const QUESTIONS_URL = getApiUrl('/api/questions');
 const STATE_KEY = 'quizState';
 
 // Save state to localStorage
