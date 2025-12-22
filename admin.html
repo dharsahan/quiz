@@ -361,6 +361,64 @@
             color: rgba(255, 255, 255, 0.6);
         }
 
+        /* Sort Buttons */
+        .sort-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+
+        .sort-label {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .sort-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.8);
+            transition: all 0.3s ease;
+        }
+
+        .sort-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            color: white;
+        }
+
+        .sort-btn.active {
+            background: linear-gradient(135deg, #06b6d4, #6366f1);
+            border-color: transparent;
+            color: white;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+        }
+
+        .sort-btn.active:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+        }
+
+        .sort-icon {
+            font-size: 1rem;
+            transition: transform 0.3s ease;
+        }
+
+        .sort-btn:hover .sort-icon {
+            transform: scale(1.1);
+        }
+
         @media (max-width: 600px) {
 
             .form-grid,
@@ -472,6 +530,18 @@
                     <button class="btn btn-danger" style="margin-left: auto; padding: 8px 15px; font-size: 0.85rem;"
                         onclick="clearAllResults()">🗑️ Clear All</button>
                 </div>
+
+                <!-- Sort Controls -->
+                <div class="sort-controls">
+                    <span class="sort-label">Sort by:</span>
+                    <button class="sort-btn active" id="sortAscBtn" onclick="sortResults('asc')">
+                        <span class="sort-icon">▲</span> Oldest First
+                    </button>
+                    <button class="sort-btn" id="sortDescBtn" onclick="sortResults('desc')">
+                        <span class="sort-icon">▼</span> Newest First
+                    </button>
+                </div>
+
                 <div id="resultsList"></div>
             </div>
         </div>
@@ -492,6 +562,7 @@
         let questions = [];
         let results = { statistics: {}, results: [] };
         let editingIndex = -1;
+        let currentSortOrder = 'asc'; // Default sort order
 
         // Tab switching
         function showTab(tabName) {
@@ -655,6 +726,17 @@
         }
 
         // === RESULTS ===
+        function sortResults(order) {
+            currentSortOrder = order;
+
+            // Update button active states
+            document.getElementById('sortAscBtn').classList.toggle('active', order === 'asc');
+            document.getElementById('sortDescBtn').classList.toggle('active', order === 'desc');
+
+            // Re-render with new sort order
+            renderResults();
+        }
+
         async function loadResults() {
             try {
                 const response = await fetch(getApiUrl('/api/results'));
@@ -682,7 +764,14 @@
                 return;
             }
 
-            container.innerHTML = list.map(r => {
+            // Sort the list based on current sort order
+            const sortedList = [...list].sort((a, b) => {
+                const dateA = new Date(a.timestamp || `${a.date} ${a.time}`);
+                const dateB = new Date(b.timestamp || `${b.date} ${b.time}`);
+                return currentSortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+            });
+
+            container.innerHTML = sortedList.map(r => {
                 const scoreClass = r.percentage >= 70 ? 'high' : (r.percentage >= 40 ? 'medium' : 'low');
                 return `
                     <div class="result-item">
@@ -693,7 +782,7 @@
                         <div class="result-meta">${r.date} at ${r.time}</div>
                     </div>
                 `;
-            }).reverse().join('');
+            }).join('');
         }
 
         async function clearAllResults() {
