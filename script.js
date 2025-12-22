@@ -230,6 +230,21 @@ function handleOptionClick(e) {
 }
 
 // Handle Next Click
+// Handle Previous Click
+function handlePrevClick() {
+    if (currentQuestion > 0) {
+        currentQuestion--;
+        loadQuestion();
+    }
+}
+
+// Calculate Score from Responses
+function calculateScore() {
+    score = responses.reduce((acc, curr) => acc + (curr && curr.isCorrect ? 1 : 0), 0);
+    updateScoreDisplay();
+}
+
+// Handle Next Click
 function handleNextClick() {
     // Store the response at current index
     const q = quiz[currentQuestion];
@@ -247,22 +262,6 @@ function handleNextClick() {
     calculateScore();
 
     currentQuestion++;
-
-
-
-    // Handle Previous Click
-    function handlePrevClick() {
-        if (currentQuestion > 0) {
-            currentQuestion--;
-            loadQuestion();
-        }
-    }
-
-    // Calculate Score from Responses
-    function calculateScore() {
-        score = responses.reduce((acc, curr) => acc + (curr && curr.isCorrect ? 1 : 0), 0);
-        updateScoreDisplay();
-    }
 
     // Save progress
     saveState();
