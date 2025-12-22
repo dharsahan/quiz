@@ -525,21 +525,19 @@
 
             <!-- Results List -->
             <div class="card">
-                <div class="card-title">
+                <div class="card-title" style="flex-wrap: wrap; gap: 10px;">
                     📊 All Results
-                    <button class="btn btn-danger" style="margin-left: auto; padding: 8px 15px; font-size: 0.85rem;"
-                        onclick="clearAllResults()">🗑️ Clear All</button>
-                </div>
 
-                <!-- Sort Controls -->
-                <div class="sort-controls">
-                    <span class="sort-label">Sort by:</span>
-                    <button class="sort-btn active" id="sortAscBtn" onclick="sortResults('asc')">
-                        <span class="sort-icon">▲</span> Oldest First
-                    </button>
-                    <button class="sort-btn" id="sortDescBtn" onclick="sortResults('desc')">
-                        <span class="sort-icon">▼</span> Newest First
-                    </button>
+                    <div class="sort-controls" style="margin-left: auto; margin-bottom: 0;">
+                        <button class="sort-btn" id="sortAscBtn" onclick="sortResults('asc')">
+                            <span class="sort-icon">▲</span> Lowest
+                        </button>
+                        <button class="sort-btn active" id="sortDescBtn" onclick="sortResults('desc')">
+                            <span class="sort-icon">▼</span> Highest
+                        </button>
+                        <button class="btn btn-danger" style="padding: 8px 15px; font-size: 0.85rem;"
+                            onclick="clearAllResults()">🗑️ Clear All</button>
+                    </div>
                 </div>
 
                 <div id="resultsList"></div>
@@ -562,7 +560,7 @@
         let questions = [];
         let results = { statistics: {}, results: [] };
         let editingIndex = -1;
-        let currentSortOrder = 'asc'; // Default sort order
+        let currentSortOrder = 'desc'; // Default sort order (highest scores first)
 
         // Tab switching
         function showTab(tabName) {
@@ -764,11 +762,12 @@
                 return;
             }
 
-            // Sort the list based on current sort order
+            // Sort the list based on current sort order (by score)
             const sortedList = [...list].sort((a, b) => {
-                const dateA = new Date(a.timestamp || `${a.date} ${a.time}`);
-                const dateB = new Date(b.timestamp || `${b.date} ${b.time}`);
-                return currentSortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+                // Sort by percentage/score
+                const scoreA = a.percentage || 0;
+                const scoreB = b.percentage || 0;
+                return currentSortOrder === 'asc' ? scoreA - scoreB : scoreB - scoreA;
             });
 
             container.innerHTML = sortedList.map(r => {

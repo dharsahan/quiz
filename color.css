@@ -365,6 +365,12 @@ body {
     font-weight: 600;
     line-height: 1.5;
     text-align: left;
+    /* Prevent copying */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
 }
 
 /* Options */
@@ -373,6 +379,12 @@ body {
     flex-direction: column;
     gap: 12px;
     margin-bottom: 25px;
+    /* Prevent copying */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
 }
 
 .option-btn {

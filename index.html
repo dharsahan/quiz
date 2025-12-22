@@ -137,6 +137,24 @@
 
     <script src="config.js"></script>
     <script src="script.js"></script>
+    <script>
+        // Prevent copying questions
+        const quizScreen = document.getElementById('quizScreen');
+
+        // Disable right-click context menu
+        quizScreen.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        // Disable copy, cut, and select all
+        quizScreen.addEventListener('copy', (e) => e.preventDefault());
+        quizScreen.addEventListener('cut', (e) => e.preventDefault());
+
+        // Disable Ctrl+C, Ctrl+A, Ctrl+X
+        quizScreen.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && (e.key === 'c' || e.key === 'a' || e.key === 'x' || e.key === 'C' || e.key === 'A' || e.key === 'X')) {
+                e.preventDefault();
+            }
+        });
+    </script>
 </body>
 
 </html>
