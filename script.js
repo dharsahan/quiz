@@ -73,7 +73,7 @@ const elements = {
     scorePercent: document.getElementById('scorePercent'),
     resultMessage: document.getElementById('resultMessage'),
     reviewBtn: document.getElementById('reviewBtn'),
-    retryBtn: document.getElementById('retryBtn'),
+
     reviewList: document.getElementById('reviewList'),
     backToResultBtn: document.getElementById('backToResultBtn')
 };
@@ -359,23 +359,13 @@ function startQuiz() {
     showScreen('quiz');
 }
 
-// Reset Quiz
-function resetQuiz() {
-    clearState();
-    currentQuestion = 0;
-    score = 0;
-    responses = [];
-    currentSelection = null;
-    elements.playerNameInput.value = '';
-    loadStats();
-    showScreen('start');
-}
+
 
 // Event Listeners
 elements.startBtn.addEventListener('click', startQuiz);
 elements.nextBtn.addEventListener('click', handleNextClick);
 elements.reviewBtn.addEventListener('click', showReview);
-elements.retryBtn.addEventListener('click', resetQuiz);
+
 elements.backToResultBtn.addEventListener('click', () => showScreen('result'));
 
 // Option buttons
