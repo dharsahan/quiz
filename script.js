@@ -65,6 +65,7 @@ const elements = {
     currentScore: document.getElementById('currentScore'),
     questionText: document.getElementById('questionText'),
     optionsContainer: document.getElementById('optionsContainer'),
+    prevBtn: document.getElementById('prevBtn'),
     nextBtn: document.getElementById('nextBtn'),
     resultIcon: document.getElementById('resultIcon'),
     resultTitle: document.getElementById('resultTitle'),
@@ -179,10 +180,31 @@ function loadQuestion() {
     });
 
     updateProgress();
-    elements.nextBtn.style.display = 'none';
+
+    // Manage Navigation Buttons
+    elements.prevBtn.style.display = currentQuestion > 0 ? 'inline-flex' : 'none';
+
+    // If already answered, restore selection
+    if (responses[currentQuestion]) {
+        currentSelection = responses[currentQuestion].selected;
+
+        // Highlight stored selection
+        const optionBtns = elements.optionsContainer.querySelectorAll('.option-btn');
+        optionBtns.forEach(btn => {
+            if (btn.dataset.option === currentSelection) {
+                btn.classList.add('selected');
+            }
+        });
+
+        // Show next button immediately since we have an answer
+        elements.nextBtn.style.display = 'inline-flex';
+    } else {
+        currentSelection = null;
+        elements.nextBtn.style.display = 'none';
+    }
 }
 
-// Handle Option Click - allows changing answer before Next
+// Handle Option Click - allows changing answer
 let currentSelection = null;
 
 function handleOptionClick(e) {
@@ -193,22 +215,10 @@ function handleOptionClick(e) {
     // If clicking same option, do nothing
     if (currentSelection === selectedOption) return;
 
-    // If changing answer, adjust score
-    if (currentSelection !== null) {
-        // Remove previous score if it was correct
-        const prevWasCorrect = currentSelection === q.answer;
-        if (prevWasCorrect) score--;
-    }
-
-    // Add score if new selection is correct
-    const isCorrect = selectedOption === q.answer;
-    if (isCorrect) score++;
-    updateScoreDisplay();
-
     // Update selection
     currentSelection = selectedOption;
 
-    // Highlight selected (allow re-selection)
+    // Highlight selected
     const optionBtns = elements.optionsContainer.querySelectorAll('.option-btn');
     optionBtns.forEach(b => {
         b.classList.remove('selected');
@@ -221,20 +231,38 @@ function handleOptionClick(e) {
 
 // Handle Next Click
 function handleNextClick() {
-    // Store the response before advancing
+    // Store the response at current index
     const q = quiz[currentQuestion];
-    responses.push({
+    responses[currentQuestion] = {
         question: q.question,
         options: q.options,
         selected: currentSelection,
         correctAnswer: q.answer,
         isCorrect: currentSelection === q.answer
-    });
+    };
 
-    // Reset selection for next question
-    currentSelection = null;
+    // Only increment score if this is a new answer or changed result
+    // Note: Simple score tracking gets complex with back/forth. 
+    // Re-calculating score from all responses is safer.
+    calculateScore();
 
     currentQuestion++;
+
+
+
+    // Handle Previous Click
+    function handlePrevClick() {
+        if (currentQuestion > 0) {
+            currentQuestion--;
+            loadQuestion();
+        }
+    }
+
+    // Calculate Score from Responses
+    function calculateScore() {
+        score = responses.reduce((acc, curr) => acc + (curr && curr.isCorrect ? 1 : 0), 0);
+        updateScoreDisplay();
+    }
 
     // Save progress
     saveState();
@@ -313,6 +341,7 @@ function showReview() {
     elements.reviewList.innerHTML = '';
 
     responses.forEach((r, i) => {
+        if (!r) return; // Skip if empty (shouldn't happen)
         const item = document.createElement('div');
         item.className = 'review-item' + (r.isCorrect ? '' : ' wrong');
 
@@ -364,6 +393,7 @@ function startQuiz() {
 // Event Listeners
 elements.startBtn.addEventListener('click', startQuiz);
 elements.nextBtn.addEventListener('click', handleNextClick);
+elements.prevBtn.addEventListener('click', handlePrevClick);
 elements.reviewBtn.addEventListener('click', showReview);
 
 elements.backToResultBtn.addEventListener('click', () => showScreen('result'));
