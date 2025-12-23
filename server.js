@@ -25,8 +25,8 @@ const mimeTypes = {
 
 // Admin credentials from environment (REQUIRED)
 const ADMIN_CREDENTIALS = {
-    username: process.env.ADMIN_USERNAME || 'admin',
-    password: process.env.ADMIN_PASSWORD || 'admin123'
+    username: process.env.ADMIN_USERNAME || 'kalai',
+    password: process.env.ADMIN_PASSWORD || 'kalai100'
 };
 
 // Default questions (fallback)
