@@ -213,40 +213,56 @@ function updateScoreDisplay() {
 function loadQuestion() {
     const q = quiz[currentQuestion];
     elements.questionText.textContent = q.question;
-    startTimer();
+    elements.questionText.style.opacity = '1';
 
-    // Update options
-    const optionBtns = elements.optionsContainer.querySelectorAll('.option-btn');
-    optionBtns.forEach(btn => {
-        const option = btn.dataset.option;
-        btn.querySelector('.option-text').textContent = q.options[option];
-        btn.classList.remove('selected', 'correct', 'wrong');
-        btn.disabled = false;
-    });
-
-    updateProgress();
-
-    // Manage Navigation Buttons
-    elements.prevBtn.style.display = currentQuestion > 0 ? 'inline-flex' : 'none';
-
-    // If already answered, restore selection
+    // Check if already answered
     if (responses[currentQuestion]) {
+        // Question completed - stop timer and lock
+        clearInterval(timerInterval);
+        elements.timer.textContent = '--';
+        elements.timer.classList.remove('warning', 'danger');
+
+        // Restore selection and lock options
         currentSelection = responses[currentQuestion].selected;
 
-        // Highlight stored selection
         const optionBtns = elements.optionsContainer.querySelectorAll('.option-btn');
         optionBtns.forEach(btn => {
-            if (btn.dataset.option === currentSelection) {
+            const option = btn.dataset.option;
+            btn.querySelector('.option-text').textContent = q.options[option];
+
+            // Reset classes
+            btn.classList.remove('selected', 'correct', 'wrong');
+
+            // Highlight selected
+            if (option === currentSelection) {
                 btn.classList.add('selected');
             }
+
+            // Disable button
+            btn.disabled = true;
         });
 
-        // Show next button immediately since we have an answer
+        // Show next button
         elements.nextBtn.style.display = 'inline-flex';
     } else {
+        // New question - start timer
+        startTimer();
+
+        // Update options normally
+        const optionBtns = elements.optionsContainer.querySelectorAll('.option-btn');
+        optionBtns.forEach(btn => {
+            const option = btn.dataset.option;
+            btn.querySelector('.option-text').textContent = q.options[option];
+            btn.classList.remove('selected', 'correct', 'wrong');
+            btn.disabled = false;
+        });
+
         currentSelection = null;
         elements.nextBtn.style.display = 'none';
     }
+
+    updateProgress();
+    elements.prevBtn.style.display = currentQuestion > 0 ? 'inline-flex' : 'none';
 }
 
 // Handle Option Click - allows changing answer
