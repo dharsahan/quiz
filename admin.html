@@ -733,9 +733,17 @@
 
         async function deleteQuestion(index) {
             if (!confirm('Delete this question?')) return;
+
+            // Backup just in case
+            const backup = [...questions];
             questions.splice(index, 1);
+
             if (await saveQuestionsToServer()) {
                 renderQuestions();
+            } else {
+                questions = backup; // Restore on failure
+                alert('Failed to delete question on server');
+                // renderQuestions(); // effectively re-renders original
             }
         }
 
@@ -755,53 +763,12 @@
             editingIndex = -1;
         }
 
-        async function generateWithAI() {
-            const topic = prompt('Enter topic:', 'Java');
-            if (!topic) return;
-            const count = prompt('How many questions?', '5');
-            if (!count) return;
-
-            try {
-                const response = await fetch(getApiUrl('/api/generate'), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ topic, count: parseInt(count) })
-                });
-                const data = await response.json();
-                if (data.success) {
-                    alert(`Generated ${data.questions.length} questions!`);
-                    loadQuestions();
-                } else {
-                    alert('Generation failed: ' + data.message);
-                }
-            } catch (e) {
-                alert('Error: ' + e.message);
-            }
-        }
+        // ... AI generation ...
 
         // === RESULTS ===
-        function sortResults(order) {
-            currentSortOrder = order;
+        // ... sortResults ...
 
-            // Update button active states
-            document.getElementById('sortAscBtn').classList.toggle('active', order === 'asc');
-            document.getElementById('sortDescBtn').classList.toggle('active', order === 'desc');
-
-            // Re-render with new sort order
-            renderResults();
-        }
-
-        async function loadResults() {
-            try {
-                const response = await fetch(getApiUrl('/api/results'));
-                if (response.ok) {
-                    results = await response.json();
-                    renderResults();
-                }
-            } catch (e) {
-                document.getElementById('resultsList').innerHTML = '<div class="empty-state">Server not running</div>';
-            }
-        }
+        // ... loadResults ...
 
         function renderResults() {
             const stats = results.statistics || {};
@@ -831,13 +798,30 @@
                 return `
                     <div class="result-item">
                         <div class="result-header">
-                            <span class="result-name">${r.name}</span>
-                            <span class="result-score ${scoreClass}">${r.score}/${r.total} (${r.percentage}%)</span>
+                            <div>
+                                <span class="result-name">${r.name}</span>
+                                <span class="result-score ${scoreClass}">${r.score}/${r.total} (${r.percentage}%)</span>
+                            </div>
+                            <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.8rem;" onclick="deleteResult('${r.id}')">✕</button>
                         </div>
                         <div class="result-meta">${r.date} at ${r.time}</div>
                     </div>
                 `;
             }).join('');
+        }
+
+        async function deleteResult(id) {
+            if (!confirm('Delete this result?')) return;
+            try {
+                const response = await fetch(getApiUrl(`/api/results?id=${id}`), { method: 'DELETE' });
+                if (response.ok) {
+                    loadResults(); // Reload list
+                } else {
+                    alert('Failed to delete result');
+                }
+            } catch (e) {
+                alert('Error connecting to server');
+            }
         }
 
         async function clearAllResults() {

@@ -387,6 +387,40 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
+    // API: Delete single result
+    if (req.url.startsWith('/api/results') && req.method === 'DELETE') {
+        const urlParams = new URLSearchParams(req.url.split('?')[1]);
+        const id = urlParams.get('id');
+
+        if (id) {
+            const data = readResults();
+            const initialLength = data.results.length;
+            data.results = data.results.filter(r => r.id.toString() !== id);
+
+            if (data.results.length !== initialLength) {
+                // Update stats
+                const scores = data.results.map(r => r.score);
+                data.statistics = {
+                    totalAttempts: data.results.length,
+                    averageScore: scores.length ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10 : 0,
+                    highestScore: scores.length ? Math.max(...scores) : 0,
+                    lowestScore: scores.length ? Math.min(...scores) : 0
+                };
+
+                saveResults(data);
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: true }));
+            } else {
+                res.writeHead(404, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, message: 'Result not found' }));
+            }
+        } else {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, message: 'Missing ID' }));
+        }
+        return;
+    }
+
     // Serve static files
     let filePath = req.url === '/' ? '/index.html' : req.url;
     filePath = path.join(__dirname, filePath);
