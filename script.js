@@ -9,6 +9,11 @@ let score = 0;
 let responses = [];
 let playerName = '';
 
+// Timer Settings
+const TIME_PER_QUESTION = 30;
+let timerInterval;
+let timeLeft;
+
 // API URLs - uses config.js for base URL
 const API_URL = getApiUrl('/api/results');
 const QUESTIONS_URL = getApiUrl('/api/questions');
@@ -22,6 +27,7 @@ function saveState() {
         score: score,
         responses: responses,
         playerName: playerName,
+        timeLeft: timeLeft,
         currentSelection: currentSelection,
         inProgress: true
     };
@@ -74,6 +80,7 @@ const elements = {
     scorePercent: document.getElementById('scorePercent'),
     resultMessage: document.getElementById('resultMessage'),
     reviewBtn: document.getElementById('reviewBtn'),
+    timer: document.getElementById('timer'),
 
     reviewList: document.getElementById('reviewList'),
     backToResultBtn: document.getElementById('backToResultBtn')
@@ -92,6 +99,51 @@ function shuffle(array) {
         [array[i], array[j]] = [array[j], array[i]];
     }
     return array;
+}
+
+// Timer Functions
+function startTimer() {
+    clearInterval(timerInterval);
+    timeLeft = TIME_PER_QUESTION;
+    updateTimerDisplay();
+
+    timerInterval = setInterval(() => {
+        timeLeft--;
+        updateTimerDisplay();
+
+        if (timeLeft <= 0) {
+            handleTimeout();
+        }
+    }, 1000);
+}
+
+function updateTimerDisplay() {
+    if (!elements.timer) return;
+    elements.timer.textContent = timeLeft;
+
+    // Visual styling
+    elements.timer.classList.remove('warning', 'danger');
+    if (timeLeft <= 10) elements.timer.classList.add('warning');
+    if (timeLeft <= 5) elements.timer.classList.add('danger');
+}
+
+function handleTimeout() {
+    clearInterval(timerInterval);
+
+    // Disable all options
+    const optionBtns = elements.optionsContainer.querySelectorAll('.option-btn');
+    optionBtns.forEach(btn => btn.disabled = true);
+
+    // Show correct answer
+    const q = quiz[currentQuestion];
+    optionBtns.forEach(btn => {
+        if (btn.dataset.option === q.answer) {
+            btn.classList.add('correct');
+        }
+    });
+
+    // Show next button so they can proceed
+    elements.nextBtn.style.display = 'inline-flex';
 }
 
 // Load Questions from Server
@@ -169,6 +221,7 @@ function updateScoreDisplay() {
 function loadQuestion() {
     const q = quiz[currentQuestion];
     elements.questionText.textContent = q.question;
+    startTimer();
 
     // Update options
     const optionBtns = elements.optionsContainer.querySelectorAll('.option-btn');
@@ -246,6 +299,7 @@ function calculateScore() {
 
 // Handle Next Click
 function handleNextClick() {
+    clearInterval(timerInterval);
     // Store the response at current index
     const q = quiz[currentQuestion];
     responses[currentQuestion] = {
