@@ -5,11 +5,42 @@
     "createdDate": "2025-12-21"
   },
   "statistics": {
-    "totalAttempts": 0,
-    "averageScore": 0,
-    "highestScore": 0,
-    "lowestScore": 0
+    "totalAttempts": 1,
+    "averageScore": 2,
+    "highestScore": 2,
+    "lowestScore": 2
   },
-  "lastUpdated": "2025-12-24T17:42:32.349Z",
-  "results": []
+  "lastUpdated": "2025-12-24T17:47:21.514Z",
+  "results": [
+    {
+      "id": 1766598441508,
+      "name": "kalai",
+      "score": 2,
+      "total": 3,
+      "percentage": 67,
+      "date": "24/12/2025",
+      "time": "11:17:21 PM",
+      "timestamp": "2025-12-24T17:47:21.508Z",
+      "responses": [
+        {
+          "question": "Which of the following is NOT a valid Java access modifier?",
+          "yourAnswer": "A",
+          "correctAnswer": "D",
+          "result": "Wrong"
+        },
+        {
+          "question": "What is the correct way to declare a variable in Java?",
+          "yourAnswer": "A",
+          "correctAnswer": "A",
+          "result": "Correct"
+        },
+        {
+          "question": "What will be the output of the following code snippet? \n\nfor(int i = 0; i < 5; i++) { System.out.print(i + ' '); }",
+          "yourAnswer": "A",
+          "correctAnswer": "A",
+          "result": "Correct"
+        }
+      ]
+    }
+  ]
 }
