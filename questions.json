@@ -1,11 +1,11 @@
 [
   {
-    "question": "What is the correct syntax to declare a variable in Java?",
+    "question": "What is the correct way to declare a variable in Java?",
     "options": {
-      "A": "int x;",
-      "B": "declare int x;",
-      "C": "var x int;",
-      "D": "x int;"
+      "A": "int number;",
+      "B": "number int;",
+      "C": "int number = ;",
+      "D": "number = int;"
     },
     "answer": "A"
   },
@@ -13,40 +13,80 @@
     "question": "Which of the following is a valid constructor in Java?",
     "options": {
       "A": "public MyClass() {}",
-      "B": "MyClass() {}",
-      "C": "void MyClass() {}",
-      "D": "MyClass() : {}"
+      "B": "void MyClass() {}",
+      "C": "MyClass() {}",
+      "D": "public void MyClass() {}"
     },
     "answer": "A"
   },
   {
-    "question": "What is the output of the following code: System.out.println(3 + 2 + '5');?",
+    "question": "What is the output of the following code: System.out.println(5 + 3 + '8');?",
     "options": {
-      "A": "55",
-      "B": "25",
-      "C": "35",
+      "A": "58",
+      "B": "88",
+      "C": "11",
       "D": "Error"
     },
     "answer": "A"
   },
   {
-    "question": "Which keyword is used to inherit a class in Java?",
+    "question": "Which access modifier allows visibility only within the same package?",
     "options": {
-      "A": "extends",
-      "B": "inherits",
-      "C": "implements",
-      "D": "extendss"
+      "A": "public",
+      "B": "private",
+      "C": "protected",
+      "D": "default"
+    },
+    "answer": "D"
+  },
+  {
+    "question": "What does the 'final' keyword do in Java?",
+    "options": {
+      "A": "Makes a variable immutable",
+      "B": "Increases performance",
+      "C": "Allows method overriding",
+      "D": "Defines a constant class"
     },
     "answer": "A"
   },
   {
-    "question": "What is the time complexity of a binary search algorithm in a sorted array?",
+    "question": "Which of the following is NOT a primitive data type in Java?",
     "options": {
-      "A": "O(n)",
-      "B": "O(log n)",
-      "C": "O(n log n)",
-      "D": "O(1)"
+      "A": "int",
+      "B": "String",
+      "C": "char",
+      "D": "boolean"
     },
     "answer": "B"
+  },
+  {
+    "question": "What is the purpose of the 'this' keyword in Java?",
+    "options": {
+      "A": "References the current object",
+      "B": "Creates a new instance",
+      "C": "Calls a method",
+      "D": "Checks for null"
+    },
+    "answer": "A"
+  },
+  {
+    "question": "How do you start a for-each loop in Java?",
+    "options": {
+      "A": "for (Type item : collection)",
+      "B": "for (item in collection)",
+      "C": "foreach (Type item in collection)",
+      "D": "for (Type item = collection)"
+    },
+    "answer": "A"
+  },
+  {
+    "question": "What is the result of the following expression: 10 % 3?",
+    "options": {
+      "A": "1",
+      "B": "3",
+      "C": "0",
+      "D": "10"
+    },
+    "answer": "A"
   }
 ]

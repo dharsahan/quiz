@@ -5,11 +5,54 @@
     "createdDate": "2025-12-21"
   },
   "statistics": {
-    "totalAttempts": 0,
-    "averageScore": 0,
-    "highestScore": 0,
-    "lowestScore": 0
+    "totalAttempts": 1,
+    "averageScore": 5,
+    "highestScore": 5,
+    "lowestScore": 5
   },
-  "lastUpdated": "2025-12-23T17:08:46.831Z",
-  "results": []
+  "lastUpdated": "2025-12-23T17:28:27.498Z",
+  "results": [
+    {
+      "id": 1766510907438,
+      "name": "kalai",
+      "score": 5,
+      "total": 5,
+      "percentage": 100,
+      "date": "23/12/2025",
+      "time": "10:58:27 PM",
+      "timestamp": "2025-12-23T17:28:27.485Z",
+      "responses": [
+        {
+          "question": "What is the output of the following code: System.out.println(3 + 2 + '5');?",
+          "yourAnswer": "A",
+          "correctAnswer": "A",
+          "result": "Correct"
+        },
+        {
+          "question": "Which keyword is used to inherit a class in Java?",
+          "yourAnswer": "A",
+          "correctAnswer": "A",
+          "result": "Correct"
+        },
+        {
+          "question": "Which of the following is a valid constructor in Java?",
+          "yourAnswer": "A",
+          "correctAnswer": "A",
+          "result": "Correct"
+        },
+        {
+          "question": "What is the correct syntax to declare a variable in Java?",
+          "yourAnswer": "A",
+          "correctAnswer": "A",
+          "result": "Correct"
+        },
+        {
+          "question": "What is the time complexity of a binary search algorithm in a sorted array?",
+          "yourAnswer": "B",
+          "correctAnswer": "B",
+          "result": "Correct"
+        }
+      ]
+    }
+  ]
 }
