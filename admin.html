@@ -763,12 +763,58 @@
             editingIndex = -1;
         }
 
-        // ... AI generation ...
+        async function generateWithAI() {
+            const topic = prompt("Enter topic for questions (e.g., Java Streams, OOP):", "Java");
+            if (!topic) return;
+
+            const count = prompt("How many questions?", "5");
+            if (!count) return;
+
+            if (!confirm(`Generate ${count} questions about ${topic}? This may take a few seconds.`)) return;
+
+            try {
+                const response = await fetch(getApiUrl('/api/generate'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ topic, count: parseInt(count) })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert(data.message);
+                    loadQuestions(); // Reload to show new questions
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (e) {
+                alert('Failed to connect to AI service');
+            }
+        }
 
         // === RESULTS ===
-        // ... sortResults ...
+        function sortResults(order) {
+            currentSortOrder = order;
 
-        // ... loadResults ...
+            // Update buttons
+            document.getElementById('sortAscBtn').className = `sort-btn ${order === 'asc' ? 'active' : ''}`;
+            document.getElementById('sortDescBtn').className = `sort-btn ${order === 'desc' ? 'active' : ''}`;
+
+            renderResults();
+        }
+
+        async function loadResults() {
+            try {
+                const response = await fetch(getApiUrl('/api/results'));
+                if (response.ok) {
+                    results = await response.json();
+                    renderResults();
+                }
+            } catch (e) {
+                console.error('Failed to load results:', e);
+                document.getElementById('resultsList').innerHTML = '<div class="empty-state">Failed to connect to server</div>';
+            }
+        }
 
         function renderResults() {
             const stats = results.statistics || {};
