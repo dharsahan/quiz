@@ -134,14 +134,6 @@ function handleTimeout() {
     const optionBtns = elements.optionsContainer.querySelectorAll('.option-btn');
     optionBtns.forEach(btn => btn.disabled = true);
 
-    // Show correct answer
-    const q = quiz[currentQuestion];
-    optionBtns.forEach(btn => {
-        if (btn.dataset.option === q.answer) {
-            btn.classList.add('correct');
-        }
-    });
-
     // Show next button so they can proceed
     elements.nextBtn.style.display = 'inline-flex';
 }
