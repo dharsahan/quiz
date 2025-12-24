@@ -448,6 +448,7 @@
         <div class="tabs">
             <button class="tab-btn active" onclick="showTab('questions')">📝 Question Manager</button>
             <button class="tab-btn" onclick="showTab('results')">📊 Results Manager</button>
+            <button class="tab-btn" onclick="showTab('settings')">⚙️ Settings</button>
         </div>
 
         <!-- Question Manager Tab -->
@@ -543,6 +544,21 @@
                 <div id="resultsList"></div>
             </div>
         </div>
+
+        <!-- Settings Tab -->
+        <div id="settingsTab" class="tab-content">
+            <div class="card">
+                <div class="card-title">⚙️ Quiz Settings</div>
+                <div class="form-group">
+                    <label>Quiz Duration (in minutes)</label>
+                    <input type="number" id="quizDuration" placeholder="e.g. 10" min="1" max="120">
+                    <small style="color: rgba(255,255,255,0.5); display: block; margin-top: 5px;">
+                        Set the detailed time allowed for the entire quiz.
+                    </small>
+                </div>
+                <button class="btn btn-primary" onclick="saveSettings()">💾 Save Settings</button>
+            </div>
+        </div>
     </div>
 
     <script src="config.js"></script>
@@ -570,6 +586,46 @@
             event.target.classList.add('active');
 
             if (tabName === 'results') loadResults();
+            if (tabName === 'settings') loadSettings();
+        }
+
+        // ... existing code ...
+
+        // === SETTINGS ===
+        async function loadSettings() {
+            try {
+                const response = await fetch(getApiUrl('/api/settings'));
+                if (response.ok) {
+                    const settings = await response.json();
+                    document.getElementById('quizDuration').value = settings.duration || 10;
+                }
+            } catch (e) {
+                console.error('Failed to load settings');
+            }
+        }
+
+        async function saveSettings() {
+            const duration = document.getElementById('quizDuration').value;
+            if (duration < 1 || duration > 120) {
+                alert('Please enter a valid duration (1-120 minutes)');
+                return;
+            }
+
+            try {
+                const response = await fetch(getApiUrl('/api/settings'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ duration: parseInt(duration) })
+                });
+
+                if (response.ok) {
+                    alert('Settings saved successfully!');
+                } else {
+                    alert('Failed to save settings');
+                }
+            } catch (e) {
+                alert('Error connecting to server');
+            }
         }
 
         // === QUESTIONS ===

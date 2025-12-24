@@ -10,6 +10,7 @@ require('dotenv').config();
 const PORT = process.env.PORT || 8080;
 const RESULTS_FILE = path.join(__dirname, 'results.json');
 const QUESTIONS_FILE = path.join(__dirname, 'questions.json');
+const SETTINGS_FILE = path.join(__dirname, 'settings.json');
 
 // GitHub Models API configuration (optional - for AI features)
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
@@ -195,6 +196,39 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'OPTIONS') {
         res.writeHead(200);
         res.end();
+        return;
+    }
+
+    // API: Get Settings
+    if (req.url === '/api/settings' && req.method === 'GET') {
+        fs.readFile(SETTINGS_FILE, 'utf8', (err, data) => {
+            if (err) {
+                // Default settings if file doesn't exist
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ duration: 10 })); // Default 10 minutes
+            } else {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(data);
+            }
+        });
+        return;
+    }
+
+    // API: Save Settings
+    if (req.url === '/api/settings' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => { body += chunk.toString(); });
+        req.on('end', () => {
+            fs.writeFile(SETTINGS_FILE, body, (err) => {
+                if (err) {
+                    res.writeHead(500, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false }));
+                } else {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: true }));
+                }
+            });
+        });
         return;
     }
 

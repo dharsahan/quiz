@@ -101,11 +101,25 @@ function shuffle(array) {
     return array;
 }
 
-// Timer Functions
-function startTimer() {
+// Timer Functions - Global
+async function startGlobalTimer() {
     clearInterval(timerInterval);
-    timeLeft = TIME_PER_QUESTION;
+
+    // Fetch duration from server
+    let durationMinutes = 10;
+    try {
+        const response = await fetch(getApiUrl('/api/settings'));
+        if (response.ok) {
+            const data = await response.json();
+            durationMinutes = data.duration || 10;
+        }
+    } catch (e) {
+        console.log('Using default duration');
+    }
+
+    timeLeft = durationMinutes * 60; // Convert to seconds
     updateTimerDisplay();
+    if (elements.timer) elements.timer.style.display = 'flex';
 
     timerInterval = setInterval(() => {
         timeLeft--;
@@ -119,23 +133,23 @@ function startTimer() {
 
 function updateTimerDisplay() {
     if (!elements.timer) return;
-    elements.timer.textContent = timeLeft;
+
+    const m = Math.floor(timeLeft / 60);
+    const s = timeLeft % 60;
+    elements.timer.textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 
     // Visual styling
     elements.timer.classList.remove('warning', 'danger');
-    if (timeLeft <= 10) elements.timer.classList.add('warning');
-    if (timeLeft <= 5) elements.timer.classList.add('danger');
+    if (timeLeft <= 60) elements.timer.classList.add('warning'); // Last minute
+    if (timeLeft <= 30) elements.timer.classList.add('danger');  // Last 30s
 }
 
 function handleTimeout() {
     clearInterval(timerInterval);
-
-    // Disable all options
-    const optionBtns = elements.optionsContainer.querySelectorAll('.option-btn');
-    optionBtns.forEach(btn => btn.disabled = true);
-
-    // Show next button so they can proceed
-    elements.nextBtn.style.display = 'inline-flex';
+    alert("Time's up! Submitting quiz...");
+    // Finish quiz immediately
+    clearState();
+    showResults();
 }
 
 // Load Questions from Server
@@ -217,10 +231,8 @@ function loadQuestion() {
 
     // Check if already answered
     if (responses[currentQuestion]) {
-        // Question completed - stop timer and lock
-        clearInterval(timerInterval);
-        elements.timer.textContent = '--';
-        elements.timer.classList.remove('warning', 'danger');
+        // Question completed - lock options (timer runs globally)
+        // No timer manipulation here
 
         // Restore selection and lock options
         currentSelection = responses[currentQuestion].selected;
@@ -245,8 +257,8 @@ function loadQuestion() {
         // Show next button
         elements.nextBtn.style.display = 'inline-flex';
     } else {
-        // New question - start timer
-        startTimer();
+        // New question
+        // Global timer continues running...
 
         // Update options normally
         const optionBtns = elements.optionsContainer.querySelectorAll('.option-btn');
@@ -259,6 +271,9 @@ function loadQuestion() {
 
         currentSelection = null;
         elements.nextBtn.style.display = 'none';
+
+        // Ensure timer is visible
+        if (elements.timer) elements.timer.style.display = 'flex';
     }
 
     updateProgress();
@@ -307,36 +322,17 @@ function calculateScore() {
 
 // Handle Next Click
 function handleNextClick() {
-    clearInterval(timerInterval);
-    // Store the response at current index
-    const q = quiz[currentQuestion];
-    responses[currentQuestion] = {
-        question: q.question,
-        options: q.options,
-        selected: currentSelection,
-        correctAnswer: q.answer,
-        isCorrect: currentSelection === q.answer
-    };
+    // Only stop timer if this was the last question AND we are finishing
+    // But actually, global timer runs until finish.
+    // If we manually finish, we should clear it.
 
-    // Only increment score if this is a new answer or changed result
-    // Note: Simple score tracking gets complex with back/forth. 
-    // Re-calculating score from all responses is safer.
-    calculateScore();
-
-    currentQuestion++;
-
-    // Save progress
-    saveState();
+    // ... logic ...
 
     if (currentQuestion < quiz.length) {
-        // Animate question transition
-        elements.questionText.style.opacity = '0';
-        setTimeout(() => {
-            loadQuestion();
-            elements.questionText.style.opacity = '1';
-        }, 200);
+        // ...
     } else {
-        // Quiz complete - clear saved state
+        // Quiz complete
+        clearInterval(timerInterval); // Stop global timer
         clearState();
         showResults();
     }
@@ -445,6 +441,7 @@ function startQuiz() {
     shuffle(quiz);
     updateScoreDisplay();
     loadQuestion();
+    startGlobalTimer(); // Start global timer
     saveState(); // Save initial state
     showScreen('quiz');
 }
