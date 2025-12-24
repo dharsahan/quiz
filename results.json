@@ -5,12 +5,12 @@
     "createdDate": "2025-12-21"
   },
   "statistics": {
-    "totalAttempts": 1,
-    "averageScore": 5,
-    "highestScore": 5,
+    "totalAttempts": 3,
+    "averageScore": 5.3,
+    "highestScore": 6,
     "lowestScore": 5
   },
-  "lastUpdated": "2025-12-23T17:28:27.498Z",
+  "lastUpdated": "2025-12-24T15:55:12.072Z",
   "results": [
     {
       "id": 1766510907438,
@@ -50,6 +50,114 @@
           "question": "What is the time complexity of a binary search algorithm in a sorted array?",
           "yourAnswer": "B",
           "correctAnswer": "B",
+          "result": "Correct"
+        }
+      ]
+    },
+    {
+      "id": 1766591638541,
+      "name": "kalai",
+      "score": 5,
+      "total": 5,
+      "percentage": 100,
+      "date": "24/12/2025",
+      "time": "9:23:58 PM",
+      "timestamp": "2025-12-24T15:53:58.578Z",
+      "responses": [
+        {
+          "question": "Which of the following is a valid constructor in Java?",
+          "yourAnswer": "A",
+          "correctAnswer": "A",
+          "result": "Correct"
+        },
+        {
+          "question": "What is the time complexity of a binary search algorithm in a sorted array?",
+          "yourAnswer": "B",
+          "correctAnswer": "B",
+          "result": "Correct"
+        },
+        {
+          "question": "What is the output of the following code: System.out.println(3 + 2 + '5');?",
+          "yourAnswer": "A",
+          "correctAnswer": "A",
+          "result": "Correct"
+        },
+        {
+          "question": "What is the correct syntax to declare a variable in Java?",
+          "yourAnswer": "A",
+          "correctAnswer": "A",
+          "result": "Correct"
+        },
+        {
+          "question": "Which keyword is used to inherit a class in Java?",
+          "yourAnswer": "A",
+          "correctAnswer": "A",
+          "result": "Correct"
+        }
+      ]
+    },
+    {
+      "id": 1766591712010,
+      "name": "kalai",
+      "score": 6,
+      "total": 9,
+      "percentage": 67,
+      "date": "24/12/2025",
+      "time": "9:25:12 PM",
+      "timestamp": "2025-12-24T15:55:12.064Z",
+      "responses": [
+        {
+          "question": "What is the result of the following expression: 10 % 3?",
+          "yourAnswer": "B",
+          "correctAnswer": "A",
+          "result": "Wrong"
+        },
+        {
+          "question": "Which of the following is NOT a primitive data type in Java?",
+          "yourAnswer": "B",
+          "correctAnswer": "B",
+          "result": "Correct"
+        },
+        {
+          "question": "What is the purpose of the 'this' keyword in Java?",
+          "yourAnswer": "A",
+          "correctAnswer": "A",
+          "result": "Correct"
+        },
+        {
+          "question": "What is the correct way to declare a variable in Java?",
+          "yourAnswer": "B",
+          "correctAnswer": "A",
+          "result": "Wrong"
+        },
+        {
+          "question": "What does the 'final' keyword do in Java?",
+          "yourAnswer": "A",
+          "correctAnswer": "A",
+          "result": "Correct"
+        },
+        {
+          "question": "What is the output of the following code: System.out.println(5 + 3 + '8');?",
+          "yourAnswer": "A",
+          "correctAnswer": "A",
+          "result": "Correct"
+        },
+        {
+          "question": "How do you start a for-each loop in Java?",
+          "yourAnswer": "A",
+          "correctAnswer": "A",
+          "result": "Correct"
+        },
+        {
+          "question": "Which access modifier allows visibility only within the same package?",
+          "yourAnswer": "A",
+          "correctAnswer": "D",
+          "result": "Wrong"
+        },
+        {
+          "question": "Which of the following is a valid constructor in Java?",
+          "yourAnswer": "A",
+          "correctAnswer": "A",
           "result": "Correct"
         }
       ]
