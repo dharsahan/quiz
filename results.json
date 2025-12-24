@@ -5,12 +5,12 @@
     "createdDate": "2025-12-21"
   },
   "statistics": {
-    "totalAttempts": 1,
-    "averageScore": 2,
-    "highestScore": 2,
+    "totalAttempts": 3,
+    "averageScore": 2.3,
+    "highestScore": 3,
     "lowestScore": 2
   },
-  "lastUpdated": "2025-12-24T17:47:21.514Z",
+  "lastUpdated": "2025-12-24T17:56:55.141Z",
   "results": [
     {
       "id": 1766598441508,
@@ -38,6 +38,66 @@
           "question": "What will be the output of the following code snippet? \n\nfor(int i = 0; i < 5; i++) { System.out.print(i + ' '); }",
           "yourAnswer": "A",
           "correctAnswer": "A",
+          "result": "Correct"
+        }
+      ]
+    },
+    {
+      "id": 1766598866204,
+      "name": "kalai",
+      "score": 3,
+      "total": 3,
+      "percentage": 100,
+      "date": "24/12/2025",
+      "time": "11:24:26 PM",
+      "timestamp": "2025-12-24T17:54:26.204Z",
+      "responses": [
+        {
+          "question": "What will be the output of the following code snippet? \n\nfor(int i = 0; i < 5; i++) { System.out.print(i + ' '); }",
+          "yourAnswer": "A",
+          "correctAnswer": "A",
+          "result": "Correct"
+        },
+        {
+          "question": "What is the correct way to declare a variable in Java?",
+          "yourAnswer": "A",
+          "correctAnswer": "A",
+          "result": "Correct"
+        },
+        {
+          "question": "Which of the following is NOT a valid Java access modifier?",
+          "yourAnswer": "D",
+          "correctAnswer": "D",
+          "result": "Correct"
+        }
+      ]
+    },
+    {
+      "id": 1766599015097,
+      "name": "kalai",
+      "score": 2,
+      "total": 3,
+      "percentage": 67,
+      "date": "24/12/2025",
+      "time": "11:26:55 PM",
+      "timestamp": "2025-12-24T17:56:55.135Z",
+      "responses": [
+        {
+          "question": "What is the correct way to declare a variable in Java?",
+          "yourAnswer": "A",
+          "correctAnswer": "A",
+          "result": "Correct"
+        },
+        {
+          "question": "What will be the output of the following code snippet? \n\nfor(int i = 0; i < 5; i++) { System.out.print(i + ' '); }",
+          "yourAnswer": "C",
+          "correctAnswer": "A",
+          "result": "Wrong"
+        },
+        {
+          "question": "Which of the following is NOT a valid Java access modifier?",
+          "yourAnswer": "D",
+          "correctAnswer": "D",
           "result": "Correct"
         }
       ]
