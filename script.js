@@ -8,6 +8,7 @@ let currentQuestion = 0;
 let score = 0;
 let responses = [];
 let playerName = '';
+let quizEndTime = null; // Target end time for global timer
 
 // Timer Settings
 const TIME_PER_QUESTION = 30;
@@ -27,7 +28,7 @@ function saveState() {
         score: score,
         responses: responses,
         playerName: playerName,
-        timeLeft: timeLeft,
+        quizEndTime: quizEndTime, // Save end time
         currentSelection: currentSelection,
         inProgress: true
     };
@@ -105,30 +106,43 @@ function shuffle(array) {
 async function startGlobalTimer() {
     clearInterval(timerInterval);
 
-    // Fetch duration from server
-    let durationMinutes = 10;
-    try {
-        const response = await fetch(getApiUrl('/api/settings'));
-        if (response.ok) {
-            const data = await response.json();
-            durationMinutes = data.duration || 10;
+    // If no end time set (new quiz), fetch duration and set it
+    if (!quizEndTime) {
+        let durationMinutes = 10;
+        try {
+            const response = await fetch(getApiUrl('/api/settings'));
+            if (response.ok) {
+                const data = await response.json();
+                durationMinutes = data.duration || 10;
+            }
+        } catch (e) {
+            console.log('Using default duration');
         }
-    } catch (e) {
-        console.log('Using default duration');
+
+        // Set target end time
+        quizEndTime = Date.now() + (durationMinutes * 60 * 1000);
+        saveState(); // Save immediately so reload works
     }
 
-    timeLeft = durationMinutes * 60; // Convert to seconds
-    updateTimerDisplay();
     if (elements.timer) elements.timer.style.display = 'flex';
 
-    timerInterval = setInterval(() => {
-        timeLeft--;
-        updateTimerDisplay();
+    // Initial display update
+    updateTimerLogic();
 
-        if (timeLeft <= 0) {
-            handleTimeout();
-        }
-    }, 1000);
+    timerInterval = setInterval(updateTimerLogic, 1000);
+}
+
+function updateTimerLogic() {
+    const now = Date.now();
+    const diff = Math.ceil((quizEndTime - now) / 1000);
+
+    timeLeft = diff > 0 ? diff : 0;
+
+    updateTimerDisplay();
+
+    if (timeLeft <= 0) {
+        handleTimeout();
+    }
 }
 
 function updateTimerDisplay() {
@@ -321,15 +335,33 @@ function calculateScore() {
 }
 
 // Handle Next Click
+// Handle Next Click
 function handleNextClick() {
-    // Only stop timer if this was the last question AND we are finishing
-    // But actually, global timer runs until finish.
-    // If we manually finish, we should clear it.
+    // Store the response at current index
+    const q = quiz[currentQuestion];
+    responses[currentQuestion] = {
+        question: q.question,
+        options: q.options,
+        selected: currentSelection,
+        correctAnswer: q.answer,
+        isCorrect: currentSelection === q.answer
+    };
 
-    // ... logic ...
+    // Only increment score if this is a new answer or changed result
+    calculateScore();
+
+    currentQuestion++;
+
+    // Save progress
+    saveState();
 
     if (currentQuestion < quiz.length) {
-        // ...
+        // Animate question transition
+        elements.questionText.style.opacity = '0';
+        setTimeout(() => {
+            loadQuestion();
+            elements.questionText.style.opacity = '1';
+        }, 200);
     } else {
         // Quiz complete
         clearInterval(timerInterval); // Stop global timer
@@ -437,6 +469,7 @@ function startQuiz() {
     score = 0;
     responses = [];
     currentSelection = null;
+    quizEndTime = null; // Reset timer for new quiz
 
     shuffle(quiz);
     updateScoreDisplay();
@@ -481,10 +514,14 @@ async function init() {
         responses = savedState.responses || [];
         playerName = savedState.playerName || 'Anonymous';
         currentSelection = savedState.currentSelection || null;
+        quizEndTime = savedState.quizEndTime || null; // Restore end time
 
         // Resume quiz
         loadQuestion();
         showScreen('quiz');
+        if (quizEndTime) {
+            startGlobalTimer(); // Resume timer
+        }
         console.log('✅ Restored quiz progress');
     } else {
         showScreen('start');
