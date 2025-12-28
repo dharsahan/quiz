@@ -73,6 +73,3 @@ Access the admin panel at `/login.html`:
 3. Configure reverse proxy (nginx/apache)
 4. Enable HTTPS
 
-## License
-
-MIT
