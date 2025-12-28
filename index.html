@@ -12,17 +12,10 @@
 </head>
 
 <body>
-    <div class="background-shapes">
-        <div class="shape shape-1"></div>
-        <div class="shape shape-2"></div>
-        <div class="shape shape-3"></div>
-    </div>
-
     <div class="app-container">
         <!-- Start Screen -->
         <div id="startScreen" class="screen active">
             <div class="card start-card">
-                <div class="logo">☕</div>
                 <h1>Java MCQ Quiz</h1>
                 <p class="subtitle">Test your Java programming knowledge</p>
 
@@ -45,22 +38,23 @@
                     <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">
                 </div>
 
-                <button id="startBtn" class="btn btn-primary btn-large">
+                <button id="startBtn" class="btn btn-primary btn-large" style="width: 100%">
                     Start Quiz
-                    <span class="btn-icon">→</span>
                 </button>
             </div>
-
         </div>
 
         <!-- Quiz Screen -->
-        <div id="quizScreen" class="screen">
+        <div id="quizScreen" class="screen" style="display: none;">
             <div class="card quiz-card">
-                <div id="timer" class="timer">30</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <div id="timer" class="timer">00:30</div>
+                    <div style="color: var(--text-muted);">Question <span id="currentQuestionNum">1</span>/<span id="totalQuestionCount">5</span></div>
+                </div>
+
                 <!-- Progress Bar -->
                 <div class="progress-container">
                     <div class="progress-bar" id="progressBar"></div>
-                    <span class="progress-text" id="progressText">1/5</span>
                 </div>
 
                 <!-- Question -->
@@ -89,51 +83,53 @@
                 </div>
 
                 <!-- Navigation Buttons -->
-                <div class="navigation-buttons">
-                    <button id="prevBtn" class="btn btn-secondary" style="display: none;">
-                        <span class="btn-icon">←</span> Previous
+                <div class="navigation-buttons" style="margin-top: 2rem; display: flex; justify-content: space-between;">
+                    <button id="prevBtn" class="btn btn-secondary" style="visibility: hidden;">
+                        Previous
                     </button>
-                    <button id="nextBtn" class="btn btn-secondary">
-                        Next Question <span class="btn-icon">→</span>
+                    <button id="nextBtn" class="btn btn-primary">
+                        Next Question
                     </button>
                 </div>
             </div>
         </div>
 
         <!-- Result Screen -->
-        <div id="resultScreen" class="screen">
+        <div id="resultScreen" class="screen" style="display: none;">
             <div class="card result-card">
-                <div class="result-icon" id="resultIcon">🎉</div>
                 <h1 id="resultTitle">Quiz Complete!</h1>
 
-                <div class="result-score">
-                    <div class="score-circle" id="scoreCircle">
+                <div class="score-circle" id="scoreCircle">
+                    <div class="score-content">
                         <span class="final-score" id="finalScore">0</span>
                         <span class="score-total" id="scoreTotal">/5</span>
                     </div>
-                    <p class="score-percent" id="scorePercent">0%</p>
                 </div>
 
-                <div class="result-message" id="resultMessage">
+                <p class="score-percent" id="scorePercent" style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem; color: var(--primary);">0%</p>
+
+                <div class="result-message" id="resultMessage" style="color: var(--text-muted); margin-bottom: 2rem;">
                     Great effort! Keep practicing to improve.
                 </div>
 
-                <div class="result-buttons">
-                    <button id="reviewBtn" class="btn btn-outline">
-                        📝 Review Answers
+                <div class="result-buttons" style="display: flex; gap: 1rem; justify-content: center;">
+                    <button id="reviewBtn" class="btn btn-secondary">
+                        Review Answers
                     </button>
-
+                    <button onclick="location.reload()" class="btn btn-primary">
+                        Try Again
+                    </button>
                 </div>
             </div>
         </div>
 
         <!-- Review Screen -->
-        <div id="reviewScreen" class="screen">
+        <div id="reviewScreen" class="screen" style="display: none;">
             <div class="card review-card">
-                <h1>📝 Answer Review</h1>
-                <div id="reviewList" class="review-list"></div>
+                <h1>Answer Review</h1>
+                <div id="reviewList" class="review-list" style="text-align: left; margin: 1.5rem 0; display: flex; flex-direction: column; gap: 1rem;"></div>
                 <button id="backToResultBtn" class="btn btn-primary">
-                    ← Back to Results
+                    Back to Results
                 </button>
             </div>
         </div>

@@ -2,19 +2,29 @@ const http = require('http');
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
 
 // Load environment variables
 require('dotenv').config();
 
 // Configuration from environment
 const PORT = process.env.PORT || 8080;
-const RESULTS_FILE = path.join(__dirname, 'results.json');
-const QUESTIONS_FILE = path.join(__dirname, 'questions.json');
-const SETTINGS_FILE = path.join(__dirname, 'settings.json');
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_KEY;
+
+// Initialize Supabase Client (if credentials exist)
+let supabase = null;
+if (SUPABASE_URL && SUPABASE_KEY) {
+    supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    console.log('✅ Supabase initialized');
+} else {
+    console.log('⚠️ Supabase credentials missing. Please set SUPABASE_URL and SUPABASE_KEY in .env');
+    // We will still start the server but DB ops will fail or we can fallback.
+    // For this migration, we assume Supabase is the target.
+}
 
 // GitHub Models API configuration (optional - for AI features)
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
-const GITHUB_MODELS_ENDPOINT = 'https://models.inference.ai.azure.com/chat/completions';
 
 // MIME types for serving static files
 const mimeTypes = {
@@ -30,7 +40,6 @@ const ADMIN_CREDENTIALS = {
     password: process.env.ADMIN_PASSWORD || 'kalai100'
 };
 
-// Default questions (fallback)
 const defaultQuestions = [
     { question: "Which keyword is used to create a class in Java?", options: { A: "class", B: "new", C: "object", D: "create" }, answer: "A" },
     { question: "What is the entry point method of a Java program?", options: { A: "start()", B: "run()", C: "main()", D: "init()" }, answer: "C" },
@@ -39,65 +48,118 @@ const defaultQuestions = [
     { question: "Which keyword is used to create an object in Java?", options: { A: "class", B: "new", C: "this", D: "object" }, answer: "B" }
 ];
 
-// Initialize results.json if it doesn't exist
-function initResultsFile() {
-    if (!fs.existsSync(RESULTS_FILE)) {
-        const initialData = {
-            quizInfo: {
-                title: "Java MCQ Quiz",
-                totalQuestions: 5,
-                createdDate: new Date().toISOString().split('T')[0]
-            },
-            statistics: {
-                totalAttempts: 0,
-                averageScore: 0,
-                highestScore: 0,
-                lowestScore: 0
-            },
-            results: []
-        };
-        fs.writeFileSync(RESULTS_FILE, JSON.stringify(initialData, null, 2));
-    }
+// --- Database Helpers ---
+
+async function getSettings() {
+    if (!supabase) return { duration: 10 };
+    const { data, error } = await supabase.from('settings').select('value').eq('key', 'quiz_duration').single();
+    if (error || !data) return { duration: 10 };
+    return data.value;
 }
 
-// Initialize questions.json
-function initQuestionsFile() {
-    if (!fs.existsSync(QUESTIONS_FILE)) {
-        fs.writeFileSync(QUESTIONS_FILE, JSON.stringify(defaultQuestions, null, 2));
-    }
+async function saveSettingsData(settings) {
+    if (!supabase) return false;
+    const { error } = await supabase.from('settings').upsert({ key: 'quiz_duration', value: settings });
+    return !error;
 }
 
-// Read results from file
-function readResults() {
-    try {
-        const data = fs.readFileSync(RESULTS_FILE, 'utf8');
-        return JSON.parse(data);
-    } catch (e) {
-        initResultsFile();
-        return readResults();
-    }
-}
-
-// Read questions from file
-function readQuestions() {
-    try {
-        const data = fs.readFileSync(QUESTIONS_FILE, 'utf8');
-        return JSON.parse(data);
-    } catch (e) {
-        initQuestionsFile();
+async function getQuestions() {
+    if (!supabase) return defaultQuestions;
+    const { data, error } = await supabase.from('questions').select('*').order('created_at', { ascending: true });
+    if (error) {
+        console.error('Error fetching questions:', error);
         return defaultQuestions;
     }
+    // Format options if needed (Supabase stores JSONB automatically as object)
+    return data;
 }
 
-// Save results to file
-function saveResults(data) {
-    fs.writeFileSync(RESULTS_FILE, JSON.stringify(data, null, 2));
+async function saveAllQuestions(questions) {
+    if (!supabase) return false;
+
+    // For simplicity, we'll delete all and re-insert to match the "save all" behavior of the frontend
+    // In a real app, we'd want finer grained updates.
+
+    // 1. Delete all
+    const { error: deleteError } = await supabase.from('questions').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+    if (deleteError) {
+        console.error('Error clearing questions:', deleteError);
+        return false;
+    }
+
+    // 2. Insert all
+    // Map questions to match schema if needed (remove ID to let DB generate it, or keep if updating)
+    const questionsToInsert = questions.map(q => ({
+        question: q.question,
+        options: q.options,
+        answer: q.answer
+    }));
+
+    const { error: insertError } = await supabase.from('questions').insert(questionsToInsert);
+    if (insertError) {
+        console.error('Error saving questions:', insertError);
+        return false;
+    }
+    return true;
 }
 
-// Save questions to file
-function saveQuestions(questions) {
-    fs.writeFileSync(QUESTIONS_FILE, JSON.stringify(questions, null, 2));
+async function getResults() {
+    if (!supabase) return { statistics: {}, results: [] };
+
+    const { data: results, error } = await supabase.from('results').select('*').order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching results:', error);
+        return { statistics: {}, results: [] };
+    }
+
+    // Calculate statistics
+    const scores = results.map(r => r.score);
+    const statistics = {
+        totalAttempts: results.length,
+        averageScore: scores.length ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10 : 0,
+        highestScore: scores.length ? Math.max(...scores) : 0,
+        lowestScore: scores.length ? Math.min(...scores) : 0
+    };
+
+    return {
+        quizInfo: { title: "Java MCQ Quiz" },
+        statistics,
+        results
+    };
 }
+
+async function saveResult(result) {
+    if (!supabase) return false;
+
+    const { error } = await supabase.from('results').insert({
+        name: result.name,
+        score: result.score,
+        total: result.total,
+        percentage: result.percentage, // Frontend sends this
+        date: result.date,
+        time: result.time
+    });
+
+    if (error) {
+        console.error('Error saving result:', error);
+        return false;
+    }
+    return true;
+}
+
+async function deleteResult(id) {
+    if (!supabase) return false;
+    const { error } = await supabase.from('results').delete().eq('id', id);
+    return !error;
+}
+
+async function clearResults() {
+    if (!supabase) return false;
+    const { error } = await supabase.from('results').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    return !error;
+}
+
 
 // Generate questions using GitHub Models API
 async function generateQuestionsWithAI(topic = "Java", count = 5) {
@@ -201,16 +263,9 @@ const server = http.createServer(async (req, res) => {
 
     // API: Get Settings
     if (req.url === '/api/settings' && req.method === 'GET') {
-        fs.readFile(SETTINGS_FILE, 'utf8', (err, data) => {
-            if (err) {
-                // Default settings if file doesn't exist
-                res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ duration: 10 })); // Default 10 minutes
-            } else {
-                res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(data);
-            }
-        });
+        const settings = await getSettings();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(settings));
         return;
     }
 
@@ -218,16 +273,21 @@ const server = http.createServer(async (req, res) => {
     if (req.url === '/api/settings' && req.method === 'POST') {
         let body = '';
         req.on('data', chunk => { body += chunk.toString(); });
-        req.on('end', () => {
-            fs.writeFile(SETTINGS_FILE, body, (err) => {
-                if (err) {
-                    res.writeHead(500, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ success: false }));
-                } else {
+        req.on('end', async () => {
+            try {
+                const settings = JSON.parse(body);
+                const success = await saveSettingsData(settings);
+                if (success) {
                     res.writeHead(200, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify({ success: true }));
+                } else {
+                    res.writeHead(500, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: 'Database error' }));
                 }
-            });
+            } catch (e) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false }));
+            }
         });
         return;
     }
@@ -259,7 +319,7 @@ const server = http.createServer(async (req, res) => {
 
     // API: Get questions
     if (req.url === '/api/questions' && req.method === 'GET') {
-        const questions = readQuestions();
+        const questions = await getQuestions();
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(questions));
         return;
@@ -269,14 +329,18 @@ const server = http.createServer(async (req, res) => {
     if (req.url === '/api/questions' && req.method === 'PUT') {
         let body = '';
         req.on('data', chunk => body += chunk);
-        req.on('end', () => {
+        req.on('end', async () => {
             try {
                 const questions = JSON.parse(body);
                 if (Array.isArray(questions)) {
-                    saveQuestions(questions);
-                    console.log(`📝 Saved ${questions.length} questions`);
-                    res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ success: true, message: 'Questions saved', count: questions.length }));
+                    const success = await saveAllQuestions(questions);
+                    if (success) {
+                        console.log(`📝 Saved ${questions.length} questions`);
+                        res.writeHead(200, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ success: true, message: 'Questions saved', count: questions.length }));
+                    } else {
+                        throw new Error('Database save failed');
+                    }
                 } else {
                     throw new Error('Invalid format');
                 }
@@ -300,8 +364,8 @@ const server = http.createServer(async (req, res) => {
 
                 const questions = await generateQuestionsWithAI(topic, count);
 
-                // Save to questions.json
-                saveQuestions(questions);
+                // Save to DB
+                await saveAllQuestions(questions);
 
                 console.log(`✅ Generated ${questions.length} questions successfully!`);
 
@@ -331,7 +395,7 @@ const server = http.createServer(async (req, res) => {
 
     // API: Get all results
     if (req.url === '/api/results' && req.method === 'GET') {
-        const results = readResults();
+        const results = await getResults();
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(results));
         return;
@@ -341,31 +405,22 @@ const server = http.createServer(async (req, res) => {
     if (req.url === '/api/results' && req.method === 'POST') {
         let body = '';
         req.on('data', chunk => body += chunk);
-        req.on('end', () => {
+        req.on('end', async () => {
             try {
                 const newResult = JSON.parse(body);
-                const data = readResults();
+                const success = await saveResult(newResult);
 
-                // Add new result
-                data.results.push(newResult);
+                if (success) {
+                    // Fetch updated data to return (for statistics update on frontend if needed)
+                    const data = await getResults();
 
-                // Update statistics
-                const scores = data.results.map(r => r.score);
-                data.statistics = {
-                    totalAttempts: data.results.length,
-                    averageScore: Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10,
-                    highestScore: Math.max(...scores),
-                    lowestScore: Math.min(...scores)
-                };
-                data.lastUpdated = new Date().toISOString();
+                    console.log(`✅ Result saved for: ${newResult.name} (Score: ${newResult.score}/${newResult.total})`);
 
-                // Save to file
-                saveResults(data);
-
-                console.log(`✅ Result saved for: ${newResult.name} (Score: ${newResult.score}/${newResult.total})`);
-
-                res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ success: true, message: 'Result saved to results.json', data: data }));
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: true, message: 'Result saved', data: data }));
+                } else {
+                    throw new Error('Database save failed');
+                }
             } catch (e) {
                 res.writeHead(400, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: false, error: e.message }));
@@ -376,14 +431,15 @@ const server = http.createServer(async (req, res) => {
 
     // API: Clear all results
     if (req.url === '/api/results/clear' && req.method === 'POST') {
-        const data = readResults();
-        data.results = [];
-        data.statistics = { totalAttempts: 0, averageScore: 0, highestScore: 0, lowestScore: 0 };
-        data.lastUpdated = new Date().toISOString();
-        saveResults(data);
-        console.log('🗑️ All results cleared');
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true, message: 'All results cleared' }));
+        const success = await clearResults();
+        if (success) {
+            console.log('🗑️ All results cleared');
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true, message: 'All results cleared' }));
+        } else {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, message: 'Failed to clear results' }));
+        }
         return;
     }
 
@@ -393,26 +449,14 @@ const server = http.createServer(async (req, res) => {
         const id = urlParams.get('id');
 
         if (id) {
-            const data = readResults();
-            const initialLength = data.results.length;
-            data.results = data.results.filter(r => r.id.toString() !== id);
+            const success = await deleteResult(id);
 
-            if (data.results.length !== initialLength) {
-                // Update stats
-                const scores = data.results.map(r => r.score);
-                data.statistics = {
-                    totalAttempts: data.results.length,
-                    averageScore: scores.length ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10 : 0,
-                    highestScore: scores.length ? Math.max(...scores) : 0,
-                    lowestScore: scores.length ? Math.min(...scores) : 0
-                };
-
-                saveResults(data);
+            if (success) {
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: true }));
             } else {
                 res.writeHead(404, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ success: false, message: 'Result not found' }));
+                res.end(JSON.stringify({ success: false, message: 'Result not found or failed to delete' }));
             }
         } else {
             res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -439,19 +483,17 @@ const server = http.createServer(async (req, res) => {
     });
 });
 
-// Initialize and start server
-initResultsFile();
-initQuestionsFile();
 server.listen(PORT, () => {
     console.log('');
     console.log('🎮 Java MCQ Quiz Server Running!');
     console.log('================================');
     console.log(`📍 Open in browser: http://localhost:${PORT}`);
-    console.log(`📁 Results stored in: ${RESULTS_FILE}`);
-    console.log(`📝 Questions stored in: ${QUESTIONS_FILE}`);
     console.log('');
     console.log('🤖 AI Question Generation: Enabled');
     console.log('   Set GITHUB_TOKEN env variable for AI features');
+    console.log('');
+    console.log('🗄️  Database: Supabase');
+    console.log('   Set SUPABASE_URL and SUPABASE_KEY in .env');
     console.log('');
     console.log('Press Ctrl+C to stop the server');
     console.log('');
