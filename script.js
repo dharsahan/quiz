@@ -17,18 +17,26 @@ let timeLeft;
 const API_URL = getApiUrl('/api/results');
 const QUESTIONS_URL = getApiUrl('/api/questions');
 const STATE_KEY = 'quizState';
+let supabaseClient = null;
+
+// Initialize Supabase if available
+if (typeof createClient !== 'undefined' && typeof SUPABASE_URL !== 'undefined') {
+    supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
 
 // DOM Elements
 const screens = {
     start: document.getElementById('startScreen'),
+    dashboard: document.getElementById('dashboardScreen'),
     quiz: document.getElementById('quizScreen'),
     result: document.getElementById('resultScreen'),
     review: document.getElementById('reviewScreen')
 };
 
 const elements = {
-    playerNameInput: document.getElementById('playerName'),
-    startBtn: document.getElementById('startBtn'),
+    loginBtn: document.getElementById('loginBtn'),
+    header: document.querySelector('.nav-header'),
+    optionsContainer: document.getElementById('options'),
     totalQuestions: document.getElementById('totalQuestions'),
     totalAttempts: document.getElementById('totalAttempts'),
     highScore: document.getElementById('highScore'),
@@ -85,10 +93,14 @@ function clearState() {
 
 function showScreen(screenName) {
     Object.values(screens).forEach(s => s.style.display = 'none');
-    screens[screenName].style.display = 'block';
+    if (screens[screenName]) screens[screenName].style.display = 'block';
 
-    // Add active class for animations if needed, though we moved to inline display styles for simplicity in JS
-    if (screenName === 'start') screens.start.classList.add('active');
+    // Header Logic
+    if (screenName === 'quiz' || screenName === 'review') {
+        elements.header.style.display = 'flex';
+    } else {
+        elements.header.style.display = 'none';
+    }
 }
 
 // --- Utils ---
@@ -99,6 +111,114 @@ function shuffle(array) {
         [array[i], array[j]] = [array[j], array[i]];
     }
     return array;
+}
+
+// --- Auth Functions ---
+
+
+// Duplicates removed
+
+async function handleStudentLogin() {
+    const rollno = document.getElementById('rollno').value.trim();
+    const password = document.getElementById('studentPassword').value.trim();
+    const errorEl = document.getElementById('loginError');
+
+    if (!rollno || !password) {
+        errorEl.textContent = 'Please enter Roll No and Password';
+        errorEl.style.display = 'block';
+        return;
+    }
+
+    try {
+        const response = await fetch(getApiUrl('/api/student/login'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rollno, password })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            sessionStorage.setItem('studentProfile', JSON.stringify(data.student));
+            handleAuthChange(data.student);
+        } else {
+            errorEl.textContent = data.message;
+            errorEl.style.display = 'block';
+        }
+    } catch (e) {
+        errorEl.textContent = 'Login failed';
+        errorEl.style.display = 'block';
+    }
+}
+
+async function loadDashboard(student) {
+    if (!student) return;
+
+    // Update Profile
+    document.getElementById('dashName').textContent = student.name;
+    document.getElementById('dashRoll').textContent = `Roll: ${student.rollno}`;
+    document.getElementById('dashAvatar').src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(student.name);
+
+    // Fetch Stats
+    try {
+        const response = await fetch(getApiUrl(`/api/student/results?rollno=${student.rollno}`));
+        const results = await response.json();
+
+        // Stats
+        const attempts = results.length;
+        // const totalScore = results.reduce((acc, r) => acc + r.score, 0); 
+        const avgPct = attempts ? results.reduce((acc, r) => acc + parseFloat(r.percentage), 0) / attempts : 0;
+        const bestPct = attempts ? Math.max(...results.map(r => parseFloat(r.percentage))) : 0;
+
+        document.getElementById('dashTotal').textContent = attempts;
+        document.getElementById('dashAvg').textContent = Math.round(avgPct) + '%';
+        document.getElementById('dashBest').textContent = Math.round(bestPct) + '%';
+
+        // History Table
+        const list = document.getElementById('historyList');
+        if (attempts === 0) {
+            list.innerHTML = '<div style="color: var(--text-muted);">No attempts yet.</div>';
+        } else {
+            list.innerHTML = results.slice(0, 10).map(r => `
+                <div class="result-item" style="padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; display: flex; justify-content: space-between;">
+                     <div>
+                         <div style="font-weight: 500; margin-bottom: 0.25rem;">${r.date}</div>
+                         <div style="font-size: 0.8rem; color: var(--text-muted);">Time: ${r.time}</div>
+                     </div>
+                     <div style="font-weight: bold; color: var(--primary); font-size: 1.1rem;">
+                         ${r.percentage}%
+                     </div>
+                </div>
+            `).join('');
+        }
+    } catch (e) {
+        console.error('Failed to load dashboard', e);
+    }
+}
+
+async function handleLogout() {
+    sessionStorage.removeItem('studentProfile');
+    window.location.reload();
+}
+
+function handleAuthChange(student) {
+    const loginSection = document.getElementById('loginSection');
+
+    if (student) {
+        // Logged In -> Show Dashboard
+        playerName = student.name;
+
+        // Hide login, show dashboard
+        screens.start.style.display = 'none';
+        loginSection.style.display = 'none';
+
+        loadDashboard(student);
+        showScreen('dashboard');
+    } else {
+        // Logged Out -> Show Login
+        playerName = '';
+        showScreen('start');
+        loginSection.style.display = 'block';
+    }
 }
 
 // --- Timer Logic ---
@@ -401,7 +521,13 @@ function showReview() {
 }
 
 function startQuiz() {
-    playerName = elements.playerNameInput.value.trim() || 'Anonymous';
+    // If authenticated, use that name. If not (fallback), uses 'Anonymous'
+    if (!playerName && supabaseClient) {
+        // Should not happen if button hidden/shown correctly
+        alert('Please login first');
+        return;
+    }
+
     currentQuestion = 0;
     score = 0;
     responses = [];
@@ -417,7 +543,7 @@ function startQuiz() {
 
 // --- Event Listeners ---
 
-elements.startBtn.addEventListener('click', startQuiz);
+// elements.startBtn.addEventListener('click', startQuiz); // Removed
 elements.nextBtn.addEventListener('click', handleNextClick);
 elements.prevBtn.addEventListener('click', handlePrevClick);
 elements.reviewBtn.addEventListener('click', showReview);
@@ -427,15 +553,41 @@ elements.optionsContainer.querySelectorAll('.option-btn').forEach(btn => {
     btn.addEventListener('click', handleOptionClick);
 });
 
-elements.playerNameInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') startQuiz();
-});
+
+// Removed obsolete playerNameInput listener
+
 
 // --- Initialization ---
 
 async function init() {
     await loadQuestions();
     await loadStats();
+
+    // Setup Auth
+    elements.loginBtn.onclick = handleStudentLogin;
+
+    // Check session from storage
+    const student = JSON.parse(sessionStorage.getItem('studentProfile') || 'null');
+    if (student) {
+        handleAuthChange(student);
+    } else {
+        handleAuthChange(null);
+    }
+
+    /*
+    // Setup Auth Listeners (GitHub Auth - Deprecated for RollNo)
+    if (supabaseClient) {
+        // elements.loginBtn.onclick = signInWithGithub;
+        
+        // Check session
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        handleAuthChange(session);
+
+        supabaseClient.auth.onAuthStateChange((_event, session) => {
+            handleAuthChange(session);
+        });
+    }
+    */
 
     const savedState = loadState();
     if (savedState && savedState.inProgress && savedState.quiz && savedState.quiz.length > 0) {

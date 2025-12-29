@@ -17,7 +17,8 @@
             <h1>Admin Login</h1>
             <p class="subtitle">Enter credentials to manage questions</p>
 
-            <div id="errorMsg" style="display: none; background-color: #FEF2F2; color: var(--danger); padding: 0.75rem; border-radius: var(--radius); margin-bottom: 1.5rem; border: 1px solid var(--danger);">
+            <div id="errorMsg"
+                style="display: none; background-color: #FEF2F2; color: var(--danger); padding: 0.75rem; border-radius: var(--radius); margin-bottom: 1.5rem; border: 1px solid var(--danger);">
                 Invalid username or password
             </div>
 
@@ -33,7 +34,9 @@
                 <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
             </form>
 
-            <a href="index.html" style="display: block; margin-top: 1.5rem; color: var(--text-muted); text-decoration: none; font-size: 0.875rem;">← Back to Quiz</a>
+            <a href="index.html"
+                style="display: block; margin-top: 1.5rem; color: var(--text-muted); text-decoration: none; font-size: 0.875rem;">←
+                Back to Quiz</a>
         </div>
     </div>
 
@@ -63,6 +66,7 @@
                 if (data.success) {
                     sessionStorage.setItem('adminLoggedIn', 'true');
                     sessionStorage.setItem('adminUser', username);
+                    sessionStorage.setItem('authToken', data.token); // Store token
                     window.location.href = 'admin.html';
                 } else {
                     errorMsg.style.display = 'block';

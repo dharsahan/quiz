@@ -3,6 +3,11 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
+const crypto = require('crypto');
+
+// Simple in-memory session store (token -> timestamp)
+const sessions = new Map();
+const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
 // Load environment variables
 require('dotenv').config();
@@ -49,6 +54,26 @@ const defaultQuestions = [
 ];
 
 // --- Database Helpers ---
+
+// Auth Middleware Helper
+function isAuthenticated(req) {
+    const authHeader = req.headers['authorization'];
+    if (!authHeader) return false;
+
+    const token = authHeader.replace('Bearer ', '');
+
+    // Check if token exists
+    if (!sessions.has(token)) return false;
+
+    // Check expiration
+    const timestamp = sessions.get(token);
+    if (Date.now() - timestamp > SESSION_DURATION) {
+        sessions.delete(token);
+        return false;
+    }
+
+    return true;
+}
 
 async function getSettings() {
     if (!supabase) return { duration: 10 };
@@ -134,6 +159,7 @@ async function saveResult(result) {
 
     const { error } = await supabase.from('results').insert({
         name: result.name,
+        roll_number: result.roll_number,
         score: result.score,
         total: result.total,
         percentage: result.percentage, // Frontend sends this
@@ -158,6 +184,78 @@ async function clearResults() {
     if (!supabase) return false;
     const { error } = await supabase.from('results').delete().neq('id', '00000000-0000-0000-0000-000000000000');
     return !error;
+}
+
+
+// --- Student Management ---
+
+async function createStudent(rollno, name, password) {
+    if (!supabase) return false;
+    const { error } = await supabase.from('students').insert({ roll_number: rollno, name, password });
+    return !error;
+}
+
+// --- Test Management ---
+
+async function getTests() {
+    if (!supabase) return [];
+    const { data, error } = await supabase.from('tests').select('*').order('created_at', { ascending: false });
+    if (error) {
+        console.error('Error fetching tests:', error);
+        return [];
+    }
+    return data;
+}
+
+async function getTest(id) {
+    if (!supabase) return null;
+    const { data, error } = await supabase.from('tests').select('*').eq('id', id).single();
+    if (error) return null;
+    return data;
+}
+
+async function createTest(testData) {
+    if (!supabase) return null;
+    const { data, error } = await supabase.from('tests').insert(testData).select().single();
+    if (error) {
+        console.error('Error creating test:', error);
+        return null;
+    }
+    return data;
+}
+
+async function updateTest(id, testData) {
+    if (!supabase) return false;
+    const { error } = await supabase.from('tests').update(testData).eq('id', id);
+    return !error;
+}
+
+async function deleteTest(id) {
+    if (!supabase) return false;
+    // First delete questions associated with this test
+    await supabase.from('questions').delete().eq('test_id', id);
+    // Then delete the test
+    const { error } = await supabase.from('tests').delete().eq('id', id);
+    return !error;
+}
+
+async function getStudents() {
+    if (!supabase) return [];
+    const { data, error } = await supabase.from('students').select('*').order('roll_number', { ascending: true });
+    return data || [];
+}
+
+async function deleteStudent(rollno) {
+    if (!supabase) return false;
+    const { error } = await supabase.from('students').delete().eq('roll_number', rollno);
+    return !error;
+}
+
+async function verifyStudent(rollno, password) {
+    if (!supabase) return null;
+    const { data, error } = await supabase.from('students').select('*').eq('roll_number', rollno).eq('password', password).single();
+    if (error || !data) return null;
+    return data;
 }
 
 
@@ -271,6 +369,11 @@ const server = http.createServer(async (req, res) => {
 
     // API: Save Settings
     if (req.url === '/api/settings' && req.method === 'POST') {
+        if (!isAuthenticated(req)) {
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, message: 'Unauthorized' }));
+            return;
+        }
         let body = '';
         req.on('data', chunk => { body += chunk.toString(); });
         req.on('end', async () => {
@@ -292,6 +395,91 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
+    // API: Get Tests
+    if (req.url.split('?')[0] === '/api/tests' && req.method === 'GET') {
+        console.log(`[GET] /api/tests - Accessing public tests`);
+        const tests = await getTests();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(tests));
+        return;
+    }
+
+    // API: Create Test
+    if (req.url.split('?')[0] === '/api/tests' && req.method === 'POST') {
+        if (!isAuthenticated(req)) {
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, message: 'Unauthorized' }));
+            return;
+        }
+        let body = '';
+        req.on('data', chunk => { body += chunk.toString(); });
+        req.on('end', async () => {
+            try {
+                const testData = JSON.parse(body);
+                const test = await createTest(testData);
+                if (test) {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: true, test }));
+                } else {
+                    res.writeHead(500, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: 'Database error' }));
+                }
+            } catch (e) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false }));
+            }
+        });
+        return;
+    }
+
+    // API: Update Test
+    if (req.url.startsWith('/api/tests/') && req.method === 'PUT') {
+        if (!isAuthenticated(req)) {
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, message: 'Unauthorized' }));
+            return;
+        }
+        const id = req.url.split('/')[3];
+        let body = '';
+        req.on('data', chunk => { body += chunk.toString(); });
+        req.on('end', async () => {
+            try {
+                const testData = JSON.parse(body);
+                const success = await updateTest(id, testData);
+                if (success) {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: true }));
+                } else {
+                    res.writeHead(500, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: 'Database error' }));
+                }
+            } catch (e) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false }));
+            }
+        });
+        return;
+    }
+
+    // API: Delete Test
+    if (req.url.startsWith('/api/tests/') && req.method === 'DELETE') {
+        if (!isAuthenticated(req)) {
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, message: 'Unauthorized' }));
+            return;
+        }
+        const id = req.url.split('/')[3];
+        const success = await deleteTest(id);
+        if (success) {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true }));
+        } else {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, message: 'Database error' }));
+        }
+        return;
+    }
+
     // API: Login
     if (req.url === '/api/login' && req.method === 'POST') {
         let body = '';
@@ -302,8 +490,13 @@ const server = http.createServer(async (req, res) => {
 
                 if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
                     console.log(`✅ Admin login successful: ${username}`);
+
+                    // Generate Session Token
+                    const token = crypto.randomBytes(32).toString('hex');
+                    sessions.set(token, Date.now());
+
                     res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ success: true, message: 'Login successful' }));
+                    res.end(JSON.stringify({ success: true, message: 'Login successful', token: token }));
                 } else {
                     console.log(`❌ Failed login attempt: ${username}`);
                     res.writeHead(401, { 'Content-Type': 'application/json' });
@@ -317,16 +510,100 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
-    // API: Get questions
-    if (req.url === '/api/questions' && req.method === 'GET') {
-        const questions = await getQuestions();
+    // API: Get questions (optionally filtered by test_id)
+    if (req.url.split('?')[0] === '/api/questions' && req.method === 'GET') {
+        const urlParams = new URLSearchParams(req.url.split('?')[1]);
+        const testId = urlParams.get('test_id');
+
+        let questions;
+        if (testId) {
+            const { data, error } = await supabase.from('questions').select('*').eq('test_id', testId).order('created_at', { ascending: true });
+            questions = error ? [] : data;
+        } else {
+            questions = await getQuestions();
+        }
+
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(questions));
         return;
     }
 
-    // API: Save/Update all questions
-    if (req.url === '/api/questions' && req.method === 'PUT') {
+    // API: Create single question
+    if (req.url.split('?')[0] === '/api/questions' && req.method === 'POST') {
+        if (!isAuthenticated(req)) {
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, message: 'Unauthorized' }));
+            return;
+        }
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', async () => {
+            try {
+                const questionData = JSON.parse(body);
+                const { data, error } = await supabase.from('questions').insert(questionData).select().single();
+                if (error) throw error;
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: true, question: data }));
+            } catch (e) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, error: e.message }));
+            }
+        });
+        return;
+    }
+
+    // API: Update single question
+    if (req.url.match(/^\/api\/questions\/[^/]+$/) && req.method === 'PUT') {
+        if (!isAuthenticated(req)) {
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, message: 'Unauthorized' }));
+            return;
+        }
+        const id = req.url.split('/')[3];
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', async () => {
+            try {
+                const questionData = JSON.parse(body);
+                const { error } = await supabase.from('questions').update(questionData).eq('id', id);
+                if (error) throw error;
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: true }));
+            } catch (e) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, error: e.message }));
+            }
+        });
+        return;
+    }
+
+    // API: Delete single question
+    if (req.url.match(/^\/api\/questions\/[^/]+$/) && req.method === 'DELETE') {
+        if (!isAuthenticated(req)) {
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, message: 'Unauthorized' }));
+            return;
+        }
+        const id = req.url.split('/')[3];
+        try {
+            const { error } = await supabase.from('questions').delete().eq('id', id);
+            if (error) throw error;
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true }));
+        } catch (e) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, error: e.message }));
+        }
+        return;
+    }
+
+    // API: Save/Update all questions (bulk - legacy)
+    if (req.url === '/api/questions/bulk' && req.method === 'PUT') {
+        if (!isAuthenticated(req)) {
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, message: 'Unauthorized' }));
+            return;
+        }
         let body = '';
         req.on('data', chunk => body += chunk);
         req.on('end', async () => {
@@ -354,6 +631,11 @@ const server = http.createServer(async (req, res) => {
 
     // API: Generate new questions with AI
     if (req.url.startsWith('/api/generate') && req.method === 'POST') {
+        if (!isAuthenticated(req)) {
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, message: 'Unauthorized' }));
+            return;
+        }
         let body = '';
         req.on('data', chunk => body += chunk);
         req.on('end', async () => {
@@ -431,6 +713,11 @@ const server = http.createServer(async (req, res) => {
 
     // API: Clear all results
     if (req.url === '/api/results/clear' && req.method === 'POST') {
+        if (!isAuthenticated(req)) {
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, message: 'Unauthorized' }));
+            return;
+        }
         const success = await clearResults();
         if (success) {
             console.log('🗑️ All results cleared');
@@ -445,6 +732,11 @@ const server = http.createServer(async (req, res) => {
 
     // API: Delete single result
     if (req.url.startsWith('/api/results') && req.method === 'DELETE') {
+        if (!isAuthenticated(req)) {
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, message: 'Unauthorized' }));
+            return;
+        }
         const urlParams = new URLSearchParams(req.url.split('?')[1]);
         const id = urlParams.get('id');
 
@@ -461,6 +753,133 @@ const server = http.createServer(async (req, res) => {
         } else {
             res.writeHead(400, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ success: false, message: 'Missing ID' }));
+        }
+        return;
+    }
+
+    // API: Student Login
+    if (req.url === '/api/student/login' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', async () => {
+            try {
+                const { rollno, password } = JSON.parse(body);
+                const student = await verifyStudent(rollno, password);
+
+                if (student) {
+                    // Generate minimal student session (rollno)
+                    // In a real app, use a separate token or claims. Here we just return user info.
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: true, student: { name: student.name, rollno: student.roll_number } }));
+                } else {
+                    res.writeHead(401, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: 'Invalid Roll Number or Password' }));
+                }
+            } catch (e) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, message: 'Invalid request' }));
+            }
+        });
+        return;
+    }
+
+    // API: Manage Students (Admin Only)
+    if (req.url === '/api/students' && req.method === 'GET') {
+        if (!isAuthenticated(req)) {
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, message: 'Unauthorized' }));
+            return;
+        }
+        const students = await getStudents();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(students));
+        return;
+    }
+
+    if (req.url === '/api/students' && req.method === 'POST') {
+        if (!isAuthenticated(req)) {
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, message: 'Unauthorized' }));
+            return;
+        }
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', async () => {
+            try {
+                const { rollno, name, password } = JSON.parse(body);
+                if (!rollno || !name || !password) throw new Error('Missing fields');
+
+                const success = await createStudent(rollno, name, password);
+                if (success) {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: true }));
+                } else {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: false, message: 'Failed to create (duplicate rollno?)' }));
+                }
+            } catch (e) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, message: e.message }));
+            }
+        });
+        return;
+    }
+
+    if (req.url.startsWith('/api/students') && req.method === 'DELETE') {
+        if (!isAuthenticated(req)) {
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, message: 'Unauthorized' }));
+            return;
+        }
+        const urlParams = new URLSearchParams(req.url.split('?')[1]);
+        const rollno = urlParams.get('rollno');
+
+        if (rollno) {
+            const success = await deleteStudent(rollno);
+            if (success) {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: true }));
+            } else {
+                res.writeHead(404, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, message: 'Failed to delete' }));
+            }
+        } else {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false }));
+        }
+        return;
+    }
+
+    // API: Get Student Results
+    if (req.url.startsWith('/api/student/results') && req.method === 'GET') {
+        const urlParams = new URLSearchParams(req.url.split('?')[1]);
+        const rollno = urlParams.get('rollno');
+
+        if (!rollno) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, message: 'Roll number required' }));
+            return;
+        }
+
+        // Fetch results for this roll number
+        if (!supabase) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, message: 'Database not connected' }));
+            return;
+        }
+
+        const { data, error } = await supabase
+            .from('results')
+            .select('*')
+            .eq('roll_number', rollno)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, message: 'Failed to fetch results' }));
+        } else {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(data || []));
         }
         return;
     }
