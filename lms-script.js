@@ -420,15 +420,9 @@ async function loadQuestions(testId = null) {
         const url = testId ? getApiUrl(`/api/questions?test_id=${testId}`) : getApiUrl('/api/questions');
         const response = await fetch(url);
         quiz = await response.json();
-        const settings = await loadSettings(); // Fallback if test has no duration
-        if (settings) {
-            // Keep specialized test duration if passed in startQuiz
-        }
-        if (document.getElementById('testShuffle') && document.getElementById('testShuffle').checked) {
-            shuffle(quiz);
-        } else {
-            shuffle(quiz); // Default shuffle
-        }
+
+        // Shuffle questions by default
+        shuffle(quiz);
     } catch (e) {
         console.error('Failed to load questions', e);
         quiz = [];
