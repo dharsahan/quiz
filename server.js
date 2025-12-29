@@ -6,6 +6,7 @@ const morgan = require('morgan');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 const crypto = require('crypto');
+const { decrypt } = require('./encryptor');
 require('dotenv').config();
 
 // Initialize Express App
@@ -27,8 +28,9 @@ const sessions = new Map();
 const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
 // Supabase Setup
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_KEY;
+const SUPABASE_URL = decrypt(process.env.SUPABASE_URL); // "Dehash" the key
+const SUPABASE_KEY = decrypt(process.env.SUPABASE_KEY); // "Dehash" the key
+const GITHUB_TOKEN = decrypt(process.env.GITHUB_TOKEN || ''); // "Dehash" the key
 let supabase = null;
 
 if (SUPABASE_URL && SUPABASE_KEY) {
@@ -38,7 +40,8 @@ if (SUPABASE_URL && SUPABASE_KEY) {
     console.log('⚠️ Supabase credentials missing. DB operations will fail.');
 }
 
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
+// GitHub Token is now decrypted at the top of the file
+
 
 // --- Middleware: Authentication ---
 const requireAuth = (req, res, next) => {
